@@ -1,0 +1,78 @@
+# Python environments, generated builds and local test output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+build/
+dist/
+*.spec
+ui-check*/
+*.log
+*.log.*
+.coverage
+.coverage.*
+htmlcov/
+test-results/
+*.egg-info/
+
+# Private runtime data belongs in %LOCALAPPDATA%\Krampuslauf.
+# These catch accidental copies placed inside the source tree.
+Krampuslauf/
+UOGiftMonkey/
+settings.json*
+settings.before-*.json*
+account_profiles.json*
+account_catalog.json*
+progress*.json*
+gift_character_identities*.json*
+gift_roster_changes*.json*
+issues.json*
+seeder_progress*.json*
+used_fantasy_names*.json*
+used_character_names*.json*
+shard_map*.json*
+marker_regions*.json*
+bridge_*.json*
+profile_isolation_active.json*
+profile_isolation_recovery/
+markers/
+/shard_names/
+timing.enabled
+
+# Razor data, recovery originals and exported private backups
+/Profiles/
+/Backup/
+RazorEnhanced.*
+*.original
+*.bak
+*.tmp
+
+# Local artwork backups and superseded marker captures
+/assets/*.bak.png
+/assets/screen_markers/*.png.before-*
+
+# Local credentials, keys and signing certificates
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
+
+# Release archives go under GitHub Releases, not into source history.
+*.zip
+*.7z
+*.rar
+*.exe
+*.dll
+
+# Local editor / operating-system files
+.vs/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

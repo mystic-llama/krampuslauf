@@ -1,0 +1,7 @@
+pythonnet>=3.0.4,<4
+pyautogui>=0.9.54,<1
+opencv-python>=4.8,<5
+pillow>=10,<13
+pygetwindow>=0.0.9,<1
+psutil>=5.9,<8
+numpy>=1.26,<3
