@@ -6,7 +6,7 @@
 
 Krampuslauf is a Windows app for seasonal gift runs in the official Ultima Online Classic Client with Razor Enhanced. **Character Seeder** creates characters in open slots across your selected shards. **Gift Cycler** logs existing characters in and out so eligible characters can receive their holiday gifts. Built by Mystic Llama.
 
-**Public source beta · 1.8.0-beta.4**
+**Public beta · 1.8.0-beta.4**
 
 [Configuration guide](CONFIGURATION.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/mystic-llama/krampuslauf/issues)
 
@@ -48,6 +48,10 @@ Ultima Online’s Krampus boss is a separate seasonal encounter. Krampuslauf han
 - Short error prompts with a concrete next action. Technical details stay in the Activity window and saved activity log; when idle, the app opens the relevant page.
 - Saved activity and error logs are available through **Help / Status > Status > Open local data folder**. The duplicate History tab has been removed.
 - Combined-mode handoff progress now belongs to a gift cycle. An earlier completed shard cannot silently skip a later cycle. Permanent character and name histories are retained.
+
+## Download for Windows
+
+Download `Krampuslauf_1.8.0-beta.4_Windows_x64.zip` from the [beta release](https://github.com/mystic-llama/krampuslauf/releases/tag/v1.8.0-beta.4). Extract the entire ZIP, open `Krampuslauf.exe`, and follow the [configuration guide](CONFIGURATION.md) to set up Razor Enhanced and the Classic Client. The Windows build includes its Python runtime.
 
 ## Run the source
 

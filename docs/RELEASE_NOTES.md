@@ -1,34 +1,28 @@
 # Krampuslauf 1.8.0-beta.4
 
-A public source beta for the official Ultima Online Classic Client with Razor Enhanced.
+A Windows beta for seasonal gift runs in the official Ultima Online Classic Client with Razor Enhanced. Character Seeder fills available character slots on selected shards and Gift Cycler logs existing characters in and out for eligible holiday rewards.
 
-## Download and configure
+## Install
 
-Download the **Full Source ZIP**, extract it, and follow the included **CONFIGURATION.md** from the beginning. The source needs Windows, Python 3.12 and the .NET Framework runtime. This source package does not include a compiled Windows EXE.
+Download `Krampuslauf_1.8.0-beta.4_Windows_x64.zip`, extract the entire archive, and open `Krampuslauf.exe`. The build includes its Python runtime. Keep the extracted folder together and follow the [configuration guide](../CONFIGURATION.md) to set up Razor Enhanced and the Classic Client. Start with one shard and one existing character before enabling character creation.
 
-## Changes
+If you prefer to run from source, use either of the source archives generated for this release. See [Run the source](../README.md#run-the-source) for prerequisites and setup.
 
-- **Global transfer-slot reservation:** under **Automation > Character Seeder**, choose the actual account capacity, enable **Keep one slot empty on every shard**, and click **Save history**. Seven-slot accounts stop creation at six total characters, including existing characters. Both creation modes honor this saved account setting; it is off by default.
-- Standalone reservation checks existing rows without recording gift completion. Existing seventh characters can still receive Gift Cycler processing. Full shards are not cleared or altered; no character is deleted.
-- Clearer pre-click marker error: tooltip interference is explained without incorrectly reporting a mouse pause. Native mouse timing is unchanged.
-- Hardened profile restoration: saved file paths must match the expected Razor registry and recovery locations. Linked paths, malformed recovery records and invalid backup content are refused before restoration.
-- Full **250 × 250** Krampuslauf artwork beside the Setup checklist, with the compact banner logo retained.
-- **MIT license**, private-data `.gitignore`, and a detailed configuration guide.
-- Includes the beta.2 improvements: typing approval persists across naming choices; a missed mouse target pauses before an unsent click; Resume checks the same game screen/window; Escape pauses and a second press while paused stops.
-- Six full-width main tabs, focused subtabs, clear NEXT instructions and Help artwork/theme controls.
+## What's included
 
-## Existing users
+- Built-in menu recognition and click positions for the Classic Client's 640 x 480 game area. Use **Setup > Game Client > Check current screen** to confirm detection.
+- Character creation with fixed or randomized appearance, automatic naming, and the option to reserve one open slot per shard.
+- Per-account progress, shard selections, and slot skips for Gift Cycler and Character Seeder. You can retry an interrupted run without starting the whole list again.
+- **Escape** pauses a run. Press it again while paused to stop, or use **Resume** in the Activity window to continue.
 
-Close Krampuslauf and privately back up `%LOCALAPPDATA%\Krampuslauf` before updating. All versions share that data folder. The first launch moves an older data folder when the new one is not already there. Keep pending-creation records, name histories and profile-recovery backups. A source update requires rebuilding any previously compiled EXE.
+## December 2026 holiday gifts
 
-The included Razor bridge is unchanged from the supplied 1.7.6 baseline. If you already use that exact script, no bridge replacement is required. New users must install it in Razor's **default** profile and enable **AutoStart at Login**.
+Seed your account early. Publish 125 lists a minimum age of **30 days** for veteran characters and a **December 1–31, 2026** redemption window in Eastern time. Once your new characters reach 30 days old, start a **New gift cycle** and run **Gift Cycler** before the window closes. [Official Ultima Online Publish 125 notes](https://uo.com/wiki/ultima-online-wiki/publish-notes/publish-125/)
 
-Capacity is selected by the user, not automatically detected. Reservation relies on calibrated row/menu recognition. Check one partly populated shard before unattended operation. Siege Perilous and Mugen are excluded from creation and gift runs. Pending creation and route-recovery safeguards remain in force.
+## Updating and feedback
 
-## Validation and beta limits
+Close Krampuslauf and back up `%LOCALAPPDATA%\Krampuslauf` before updating. Keep your character histories and Razor profile-recovery backups. If you already installed the supplied bridge, use the configuration guide to confirm Razor starts a single copy of `krampuslauf_bridge.py`.
 
-**286 tests and 19 subtests pass**, including transfer-slot reservation, profile restoration, bridge simulations, naming approval, input interruption and pending-character recovery. The updated Seeder page has been checked in both browser-preview themes. These checks do not establish native Windows or live-game behavior; a Windows build and supervised client testing remain necessary.
+Gift Cycler records verified login, wait, and logout. Check your character's backpack for the reward after your first run.
 
-Start with one shard and an existing character. Gift completion records verified entry, waiting and logout; it does not inspect inventory. Town Crier right-click cleanup is optional and can interact with the world if the window is absent. Inspect an uncertain creation before using **Automation > Recovery**.
-
-Report the version, Windows scaling, tab/action and a short relevant saved activity-log excerpt through the [Krampuslauf project](https://github.com/mystic-llama/krampuslauf). Remove personal details before posting. Do not upload your app-data folder or Razor settings.
+Include your beta version, Windows display scaling, and a short relevant activity-log excerpt when reporting an issue. [GitHub issues](https://github.com/mystic-llama/krampuslauf/issues)

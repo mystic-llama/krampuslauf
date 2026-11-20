@@ -13,7 +13,7 @@ if errorlevel 1 goto :missing
 echo Building Krampuslauf 1.8.0-beta.4 with %GM_PYTHON%...
 %GM_PYTHON% -m pip install -r requirements.txt pyinstaller
 if errorlevel 1 goto :failed
-%GM_PYTHON% -m PyInstaller --noconfirm --clean --onedir --windowed --name Krampuslauf --icon "assets\Krampuslauf.ico" --collect-all pythonnet --collect-all clr_loader Krampuslauf.py
+%GM_PYTHON% -m PyInstaller --noconfirm --clean --onedir --windowed --name Krampuslauf --icon "assets\Krampuslauf.ico" --collect-all pythonnet --collect-all clr_loader --exclude-module mouseinfo Krampuslauf.py
 if errorlevel 1 goto :failed
 echo.
 if exist "assets" xcopy /E /I /Y "assets" "dist\Krampuslauf\assets" >nul
