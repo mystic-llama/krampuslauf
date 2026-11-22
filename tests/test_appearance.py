@@ -75,6 +75,34 @@ def test_no_ticks_means_male_human_with_default_styles():
                       'hair_color': None, 'facial_color': None}
 
 
+def test_randomize_all_uses_every_supported_pool_and_keeps_saved_filters():
+    config = cfg(mode='all', sex=['female'], race=['elf'], styles={'elf_female_hair': [4]},
+                 skin={'elf': [9]}, hair_color={'elf': [11]})
+    rng = random.Random(17)
+    results = [choose(config, rng) for _ in range(150)]
+    assert {(r['race'], r['sex']) for r in results} == {
+        (race, sex) for race in appearance.RACES for sex in appearance.SEXES}
+    for choice in results:
+        race, sex = choice['race'], choice['sex']
+        assert 0 <= choice['skin'] < SKIN_GRIDS[race][0] * SKIN_GRIDS[race][1]
+        for part, field in appearance.COLOR_FIELDS.items():
+            options = STYLE_OPTIONS.get(appearance.style_group(race, sex, part))
+            if options is None:
+                assert choice[part] is None and choice[field] is None
+            else:
+                assert 0 <= choice[part] < len(options)
+                if options[choice[part]].lower() == 'none':
+                    assert choice[field] is None
+                else:
+                    cols, rows = appearance.COLOR_GRIDS[race]
+                    assert 0 <= choice[field] < cols * rows
+    assert {'app_hair_color_open', 'app_facial_color_open', 'app_skin_gargoyle_first'} <= set(required_points(config))
+    config['appearance']['mode'] = 'random'
+    filtered = choose(config, rng)
+    assert (filtered['race'], filtered['sex'], filtered['hair'], filtered['skin'], filtered['hair_color']) == (
+        'elf', 'female', 4, 9, 11)
+
+
 def test_skin_cells_interpolate_between_recorded_corners():
     first, last = [500, 150], [570, 395]
     assert skin_cell_point('human', 0, first, last) == first

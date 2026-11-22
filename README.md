@@ -6,7 +6,7 @@
 
 Krampuslauf is a Windows app for seasonal gift runs in the official Ultima Online Classic Client with Razor Enhanced. **Character Seeder** creates characters in open slots across your selected shards. **Gift Cycler** logs existing characters in and out so eligible characters can receive their holiday gifts. Built by Mystic Llama.
 
-**Public beta · 1.8.0-beta.5**
+**Public beta · 1.8.0-beta.6**
 
 [Configuration guide](CONFIGURATION.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/mystic-llama/krampuslauf/issues)
 
@@ -51,7 +51,7 @@ Ultima Online’s Krampus boss is a separate seasonal encounter. Krampuslauf han
 
 ## Download for Windows
 
-Download `Krampuslauf_1.8.0-beta.5_Windows_x64.zip` from the [beta release](https://github.com/mystic-llama/krampuslauf/releases/tag/v1.8.0-beta.5). Extract the entire ZIP, open `Krampuslauf.exe`, and follow the [configuration guide](CONFIGURATION.md) to set up Razor Enhanced and the Classic Client. The Windows build includes its Python runtime.
+The [beta release](https://github.com/mystic-llama/krampuslauf/releases/tag/v1.8.0-beta.6) includes the Windows x64 installer, portable ZIP, and full source ZIP. Run the installer or extract the entire portable ZIP and open `Krampuslauf.exe`. Both Windows packages include the Python runtime. Follow the [configuration guide](CONFIGURATION.md) to set up Razor Enhanced and the Classic Client.
 
 ## Run the source
 
@@ -73,6 +73,8 @@ The batch file uses the `py -3` launcher when it is available, then `python` on 
 6. **Automation > Gift Cycler:** choose shards, optional slot skips and timing, then save run options. Use **New gift cycle** when changing accounts or starting a new gift event. Test one shard first. **Select account** opens the account list. Character creation, appearance, and click-point overrides can wait until that first shard succeeds.
 
 For creation, in **Automation > Character Seeder**, select **Main Account** or **Account 2–15** (five rows of three) then choose naming options under **Automation > Appearance**. That selected account is also used for combined Gift Cycler + Seeder runs. Optionally choose sex, race, styles and skin tones together with profession under **Automation > Appearance**, in Fixed or Random mode. Skin-palette cell centres are built in for all three races; no first-run skin calibration is required. Use **Setup > Game Client > Click points** only to override a missed click.
+
+Choose **All shards**, **English shards**, or **Asian shards** from **Shard group** on either automation page. The choice is saved per account and applies to both modes, along with the individual shard checkboxes on Gift Cycler. The Asian group contains Arirang, Asuka, Balhae, Formosa, Hokuto, Izumo, Mizuho, Sakura, Wakoku, and Yamato.
 
 The optional Account Nickname is capped at 16 characters and changes the displayed radio-button name, never the internal history identity or generated names. Convention names look like `Llama CAT b`; fantasy names are saved before typing and reused after a halt. See [the naming reference](docs/FANTASY_NAMES.md).
 

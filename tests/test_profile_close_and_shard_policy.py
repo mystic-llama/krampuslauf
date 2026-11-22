@@ -93,6 +93,24 @@ def test_arrow_navigation_uses_real_row_after_hidden_shard():
     worker.scroll_shard_arrow.assert_not_called()
 
 
+def test_shard_groups_preserve_physical_rows_and_apply_exclusions():
+    from cycler_engine import KNOWN_SHARDS
+    from shard_policy import matches_shard_group, normalize_shards, physical_index, run_shards
+
+    asian = ['Arirang', 'Asuka', 'Balhae', 'Formosa', 'Hokuto',
+             'Izumo', 'Mizuho', 'Sakura', 'Wakoku', 'Yamato']
+    assert [name for name in KNOWN_SHARDS if matches_shard_group(name, 'asian')] == asian
+    assert len([name for name in KNOWN_SHARDS if matches_shard_group(name, 'english')]) == 17
+    config = normalize_shards({'shards': KNOWN_SHARDS, 'excluded': ['Atlantic', 'Balhae']})
+    targets = run_shards(dict(config, shard_group='asian'))
+    assert [name for _, name in targets] == [name for name in asian if name != 'Balhae']
+    assert all(physical_index(config, index) == KNOWN_SHARDS.index(name) for index, name in targets)
+    english = run_shards(dict(config, shard_group='english'))
+    assert len(english) == 14
+    assert set(english) | set(targets) == set(run_shards(config))
+    assert config['navigation_shards'] == KNOWN_SHARDS
+
+
 def test_donation_uses_only_the_supplied_url(monkeypatch):
     import webbrowser
     from ui_layout import DONATION_URL
@@ -111,6 +129,7 @@ def test_restart_retires_routes_without_erasing_progress_or_unknown_submissions(
     path.write_text(json.dumps(original))
     monkeypatch.setattr(seeder_engine,'SEED_PROGRESS_FILE',path)
     worker=type('Worker',(seeder_engine.SeederOperations,),{})()
+    worker.cfg = {}
     worker.seed_account_id='main';worker.say=Mock()
     worker.retire_interrupted_routes()
     saved=json.loads(path.read_text())

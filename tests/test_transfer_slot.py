@@ -201,6 +201,27 @@ def test_combined_mode_collects_from_existing_seventh_character(worker):
     assert not worker.created_rows
 
 
+@pytest.mark.parametrize('mode', ['cycler', 'combined', 'reserved_seeder'])
+def test_cycler_paths_run_only_checked_shards_in_the_selected_group(worker, mode):
+    worker.cfg.update(shards=['Catskills', 'Balhae', 'Atlantic', 'Sakura'],
+                      shard_group='asian', excluded=['Sakura'],
+                      create_missing=mode == 'combined')
+    occupied_rows(worker, 7)
+    enter_slot = worker.enter_slot
+    visited = set()
+
+    def record_visit(index, row):
+        visited.add(index)
+        return enter_slot(index, row)
+
+    worker.enter_slot = record_visit
+    if mode == 'reserved_seeder':
+        worker.run_seeder()
+    else:
+        worker.run()
+    assert visited == {1}
+
+
 def test_combined_mode_collects_existing_characters_before_seeding(worker):
     occupied_rows(worker, 2)
     worker.run()

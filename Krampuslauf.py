@@ -12,7 +12,7 @@ import threading
 import time
 from datetime import datetime
 from activity_history import ActivityHistory
-from shard_policy import normalize_shards, supported_shards
+from shard_policy import SHARD_GROUP_OPTIONS, normalize_shards, run_shards, supported_shards
 from ui_assets import artwork_bounds
 from ui_layout import HEADER_HEIGHT, DONATION_URL
 from ui_layout import NAVIGATION, LAYOUTS, FONT_PT, VERSION, PROJECT_URL, tab_widths
@@ -521,6 +521,8 @@ class MainWindow(Form):
             box.CheckedChanged += protected_ui(lambda sender, args, key=key: self.appearance_selection_changed(key))
         self.app_mode.SelectedIndexChanged += protected_ui(self.appearance_mode_changed)
         self.seed_mode_pick.SelectedIndexChanged += protected_ui(self.update_seed_name_mode)
+        self.gift_shard_group.SelectedIndexChanged += protected_ui(self.sync_shard_group)
+        self.seed_shard_group.SelectedIndexChanged += protected_ui(self.sync_shard_group)
         self.account_field.TextChanged += protected_ui(self.account_label_changed)
         self.account_field.Leave += protected_ui(self.save_account_profile)
         for slot, radio in self.account_radios.items():
@@ -848,6 +850,9 @@ class MainWindow(Form):
     def update_skin_status(self):
         if not hasattr(self, 'skin_status'):
             return
+        if self.app_mode.SelectedIndex == appearance.MODES.index('all'):
+            self.skin_status.Text = 'Randomize All uses every valid option.'
+            return
         target, _ = self.active_palette()
         race = getattr(self, 'active_skin_race', 'human')
         if target is None:
@@ -899,7 +904,10 @@ class MainWindow(Form):
         self.app_style_group.SelectedIndex = list(appearance.STYLE_LABELS).index(target)
 
     def appearance_mode_changed(self, sender=None, args=None):
-        if getattr(self, '_loading_account', False) or self.app_mode.SelectedIndex != 0:
+        if getattr(self, '_loading_account', False):
+            return
+        if self.app_mode.SelectedIndex != 0:
+            self.update_skin_status()
             return
         # Switching back to Fixed retains one selected race, sex and style.
         self._changing_appearance = True
@@ -938,7 +946,8 @@ class MainWindow(Form):
     def load_appearance_controls(self):
         look = self.cfg['appearance']
         self.app_enabled.Checked = bool(look['enabled'])
-        self.app_mode.SelectedIndex = 1 if look['mode'] == 'random' else 0
+        mode = look['mode'] if look['mode'] in appearance.MODES else 'fixed'
+        self.app_mode.SelectedIndex = appearance.MODES.index(mode)
         for sex in appearance.SEXES:
             self.app_checks['sex_' + sex].Checked = sex in look['sex']
         for race in appearance.RACES:
@@ -967,7 +976,7 @@ class MainWindow(Form):
             return
         look = self.cfg['appearance']
         look['enabled'] = bool(self.app_enabled.Checked)
-        look['mode'] = ('fixed', 'random')[max(0, int(self.app_mode.SelectedIndex))]
+        look['mode'] = appearance.MODES[max(0, int(self.app_mode.SelectedIndex))]
         look['sex'] = [s for s in appearance.SEXES if self.app_checks['sex_' + s].Checked]
         look['race'] = [r for r in appearance.RACES if self.app_checks['race_' + r].Checked]
         self.store_style_items()
@@ -984,6 +993,11 @@ class MainWindow(Form):
             window_message('Appearance saved.\n\nBefore creating characters, record these click points under '
                            'Setup > Game Client > Click points:\n\n- ' + '\n- '.join(
                                dict(POINT_LABELS).get(k, k) for k in missing))
+
+    def randomize_all_appearance(self, sender, args):
+        self.app_enabled.Checked = True
+        self.app_mode.SelectedIndex = appearance.MODES.index('all')
+        self.save_appearance(sender, args)
 
     def selected_point(self):
         index = int(self.point_pick.SelectedIndex)
@@ -1291,6 +1305,11 @@ class MainWindow(Form):
         self.mount_page('gift')
         self.cycle_status_label.Text = 'Cycle: ' + self.cfg.get('gift_cycle_id', '')[:8]
 
+    def sync_shard_group(self, sender, args):
+        selected = sender.SelectedIndex
+        for picker in (self.gift_shard_group, self.seed_shard_group):
+            if picker.SelectedIndex != selected:
+                picker.SelectedIndex = selected
 
     def new_gift_cycle(self, sender=None, args=None):
         if self.busy():
@@ -1369,7 +1388,7 @@ class MainWindow(Form):
             from fantasy_name_generator import FantasyNameGenerator
             style = self.cfg.get('seed_fantasy_style', 'mixed')
             import appearance
-            look = appearance.settings(self.cfg)
+            look = appearance.selection_pools(self.cfg)
             categories = [r + '_' + sex for r in (look['race'] or ['human'])
                           for sex in (look['sex'] or ['male'])] if look['enabled'] else ['human_male']
             generator = FantasyNameGenerator()
@@ -1378,8 +1397,8 @@ class MainWindow(Form):
                         for category in (categories * 12)[:12]]
             window_message('Fantasy-name mode ({})\n\n{}\n\n'
                            'These are previews only, not reserved.\n'
-                           'A chosen name is saved before entering the game; '
-                           'pending and interrupted characters keep the same name.'.format(
+                           'Naming changes apply to future submissions. '
+                           'Already submitted characters keep their names.'.format(
                                style, '\n'.join(examples)), 'Fantasy name preview')
             return
         from seeder_rules import generated_name
@@ -1433,6 +1452,9 @@ class MainWindow(Form):
                     self.cfg[key] = saved[key]
             if not saved:
                 self.cfg['excluded'], self.cfg['skip_slots'] = [], {}
+            group = saved.get('shard_group', 'all')
+            self.gift_shard_group.SelectedIndex = next(
+                (index for index, (_, value) in enumerate(SHARD_GROUP_OPTIONS) if value == group), 0)
             if not initial and 'seed_route_delay_seconds' not in saved:
                 self.cfg['seed_route_delay_seconds'] = 5
             if 'gift_cycle_id' not in saved:
@@ -1593,6 +1615,9 @@ class MainWindow(Form):
             issues=test_config(self.cfg)
             if issues:raise ValueError('Setup incomplete: '+'; '.join(issues))
             self.require_active_account_profile()
+            targets = run_shards(self.cfg)
+            if not targets:
+                raise ValueError('No included shards in the selected shard group.')
             self.persist_profile_if_active()
             cfg=json.loads(json.dumps(self.cfg))
             worker=MergedWorker(cfg,self.account_display_name(),'seeder',
@@ -1600,9 +1625,9 @@ class MainWindow(Form):
             worker.check_seed_setup()
             if len(game_windows())!=1:raise RuntimeError('Exactly one Classic Client window required.')
             prompt = ('This run will write history to your {} account.\n\n'
-                      'Create characters on the included shards, choose Moonglow, '
+                      'Create characters on {} included shard(s), choose Moonglow, '
                       'and log out at the inn. Finished shards will be skipped.\n\nProceed?').format(
-                          self.account_display_name())
+                          self.account_display_name(), len(targets))
             if MessageBox.Show(prompt, 'Start Character Seeder', MessageBoxButtons.YesNo,
                                MessageBoxIcon.Question) != DialogResult.Yes:
                 return
@@ -1778,6 +1803,8 @@ class MainWindow(Form):
             self.cfg["fast_last_shard"] = bool(self.fast_last_shard.Checked)
         if hasattr(self,'create_missing_checkbox'):
             self.cfg['create_missing']=bool(self.create_missing_checkbox.Checked)
+        if hasattr(self, 'gift_shard_group'):
+            self.cfg['shard_group'] = SHARD_GROUP_OPTIONS[int(self.gift_shard_group.SelectedIndex)][1]
         if hasattr(self, 'seed_capacity_pick'):
             capacity_index = int(self.seed_capacity_pick.SelectedIndex)
             if capacity_index not in (0, 1, 2):
@@ -1789,7 +1816,7 @@ class MainWindow(Form):
         if hasattr(self, 'seed_mode_pick'):
             self.cfg['seed_naming_mode'] = ('convention', 'fantasy')[max(0, int(self.seed_mode_pick.SelectedIndex))]
             self.cfg['seed_fantasy_style'] = ('single', 'full', 'mixed')[max(0, int(self.seed_style_pick.SelectedIndex))]
-        if hasattr(self,'seed_prefix_field'):
+        if hasattr(self,'seed_prefix_field') and self.cfg.get('seed_naming_mode') == 'convention':
             prefix=str(self.seed_prefix_field.Text).strip()
             if not prefix or not prefix.isascii() or not prefix.isalpha() or len(prefix) > 10:
                 raise ValueError('Name prefix must consist of 1 to 10 letters (A-Z).')
@@ -2078,14 +2105,14 @@ class MainWindow(Form):
             if issues:
                 raise ValueError("Setup incomplete:\n- " + "\n- ".join(issues))
             self.require_active_account_profile()
-            included = [s for s in self.cfg["shards"] if s not in self.cfg["excluded"]]
-            if not included:
-                raise ValueError("No included shards: every shard is excluded.")
-            total_slots = sum(len(occupied_slots_for(self.cfg, s)) for s in included)
+            targets = run_shards(self.cfg)
+            if not targets:
+                raise ValueError("No included shards in the selected shard group.")
+            total_slots = sum(len(occupied_slots_for(self.cfg, shard)) for _, shard in targets)
             text = ('This run will write history to your {} account.\n\n'
                     '{} included shards; up to {} character positions.\n'
                     'Character creation: {}.\n\nProceed?').format(
-                        self.account_display_name(), len(included), total_slots,
+                        self.account_display_name(), len(targets), total_slots,
                         'ENABLED' if self.cfg.get('create_missing') else 'DISABLED')
             if MessageBox.Show(text, "Start cycling", MessageBoxButtons.YesNo,
                                MessageBoxIcon.Warning) != DialogResult.Yes:

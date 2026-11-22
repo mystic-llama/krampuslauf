@@ -6,8 +6,9 @@ Actions name existing MainWindow handlers, never automation implementations.
 """
 from account_profiles import SLOTS, NICKNAME_LIMIT
 from appearance import COLOR_ASSETS
+from shard_policy import SHARD_GROUP_OPTIONS
 
-VERSION = '1.8.0-beta.5'
+VERSION = '1.8.0-beta.6'
 PROJECT_URL = 'https://github.com/mystic-llama/krampuslauf'
 PAGE_WIDTH, PAGE_HEIGHT = 676, 602
 HEADER_HEIGHT = 144
@@ -137,10 +138,13 @@ LAYOUTS = {
     'gift': [
         heading('Gift Cycler', w=316),
         button('Select account', 'page:seeder', 344, 12, 316),
-        text('Included shards (checked = run)', 52, w=316),
-        field('shard_checks', 16, 82, 316, kind='checklist', h=144),
-        button('All shards', 'select_all_shards', 16, 240, 152),
-        button('No shards', 'select_no_shards', 180, 240, 152),
+        text('Shard group', 52, w=112),
+        field('gift_shard_group', 140, 48, 192, 'shard_group', 'all', 'choice',
+              items=SHARD_GROUP_OPTIONS),
+        text('Run checked shards in this group', 88, w=316),
+        field('shard_checks', 16, 116, 316, kind='checklist', h=110),
+        button('Check all', 'select_all_shards', 16, 240, 152),
+        button('Uncheck all', 'select_no_shards', 180, 240, 152),
         text('Skip character slots (optional)\nExample: Atlantic: 1-5', 52, 344, 316, 44),
         field('slots_field', 344, 104, 316, kind='textarea', h=100, source='slot_rules'),
         button('Save slot skips', 'save_slot_rules', 344, 220, 316),
@@ -159,8 +163,11 @@ LAYOUTS = {
     'seeder': [
         heading('Character Seeder', w=316),
         button('Names and appearance', 'page:looks', 344, 8, 316),
-        text('Select an account for Gift Cycler. Creation is optional.', 48, role='note'),
-        text('Account', 76),
+        text('Account and shard group apply to both modes.', 48, w=316, role='note'),
+        text('Shard group', 52, 344, 112),
+        field('seed_shard_group', 456, 48, 204, 'shard_group', 'all', 'choice',
+              items=SHARD_GROUP_OPTIONS),
+        text('Account', 76, w=204),
         *(field('account_radios.' + slot, 16 + (index % 3) * 220,
                 104 + (index // 3) * 28, 204, kind='radio', h=24, default=index == 0)
           for index, slot in enumerate(SLOTS)),
@@ -196,8 +203,10 @@ LAYOUTS = {
         text('', 116, 456, 204, 64, 'muted', 'seed_name_hint'),
         rule(190),
         check('Customize appearance', 'app_enabled', None, 16, 202, 300),
+        button('Randomize All', 'randomize_all_appearance', 320, 198, 120),
         field('app_mode', 456, 202, 204, kind='choice',
-              items=(('Fixed selections', 'fixed'), ('Random from selected', 'random'))),
+              items=(('Fixed selections', 'fixed'), ('Random from selected', 'random'),
+                     ('Randomize All', 'all'))),
         text('Sex', 248, w=52),
         check('Male', 'app_checks.sex_male', None, 76, 244, 90),
         check('Female', 'app_checks.sex_female', None, 176, 244, 104),

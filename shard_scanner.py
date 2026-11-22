@@ -4,7 +4,7 @@ Every character-menu Back restores the shard scrollbar to TOP (operator-tested).
 No character is ever selected; any unrecognized or dangerous screen halts.
 Only known shard suffixes from the OS window title are stored, never account names.
 """
-from cycler_engine import APP_DIR, KNOWN_SHARDS, SYNC_PATIENCE_SECONDS, GameWorker, selected_window
+from cycler_engine import APP_DIR, KNOWN_SHARDS, SYNC_PATIENCE_SECONDS, GameWorker, focus_game, selected_window
 from shard_identity import shard_from_title
 from shard_map import save_map, load_map
 from scan_layout import row_for_index
@@ -131,8 +131,20 @@ class ShardScanner(GameWorker):
         total=int(total)
         if total<1 or total>40:
             raise ValueError('Shard scan count must be 1–40')
-        if self.state()!='servers':
-            raise RuntimeError('Open the shard list before scanning; no menu input sent.')
+        # Activity takes the foreground at startup. Capture the visible client
+        # only after it is back in front, and allow a moment for it to repaint.
+        self.check()
+        focus_game(self.window_title)
+        state = self.state()
+        for _ in range(4):
+            if state != 'unknown':
+                break
+            self.sleep(.25)
+            state = self.state()
+        if state != 'servers':
+            score, marker = max(getattr(self, '_last_marker_scores', ()), default=(0.0, 'none'))
+            raise RuntimeError(f'Open the shard list before scanning. Detected {state} after focusing '
+                               f'Classic Client (best marker {marker} {score:.2f}). No menu input sent.')
         prior=load_map(MAP_FILE,self.cfg,require_complete=False) if resume else None
         names=list(prior['shards']) if prior and not prior.get('complete') else []
         if len(names)>total:

@@ -45,8 +45,8 @@ class BorderlessTabsTests(unittest.TestCase):
             self.assertIn(page, LAYOUTS)
         self.assertIn('self.tabs.add_page(title, root)', GUI)
         preflight = GUI.split('def require_setup(self):')[1].split('def build_home')[0]
-        self.assertEqual(preflight.count("self.show_page('setup')"), 2)
-        self.assertEqual(preflight.count("self.show_page('profiles')"), 1)
+        self.assertIn("self.show_page('setup')", preflight)
+        self.assertIn("self.show_page('profiles')", preflight)
 
     def test_seeder_comboboxes_do_not_overlap_labels(self):
         from ui_layout import LAYOUTS

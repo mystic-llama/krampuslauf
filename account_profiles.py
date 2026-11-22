@@ -6,7 +6,7 @@ SLOTS = ('main',) + tuple('account{}'.format(number) for number in range(2, 16))
 DEFAULT_NAMES = {'main': 'Main Account', **{
     'account{}'.format(number): 'Account {}'.format(number) for number in range(2, 16)}}
 NICKNAME_LIMIT = 16
-ACCOUNT_SETTINGS = ('excluded', 'skip_slots', 'occupied_slots', 'account_cap',
+ACCOUNT_SETTINGS = ('excluded', 'shard_group', 'skip_slots', 'occupied_slots', 'account_cap',
                     'reserve_transfer_slot', 'seed_name_prefix', 'seed_naming_mode',
                     'seed_fantasy_style', 'seed_profession', 'seed_route_delay_seconds', 'appearance', 'create_missing',
                     'gift_wait', 'post_logout_seconds', 'online_cooldown_seconds', 'fast_last_shard', 'gift_cycle_id')

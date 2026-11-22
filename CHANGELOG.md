@@ -1,3 +1,12 @@
+# 1.8.0-beta.6
+
+- Add per-account shard groups for Gift Cycler and Character Seeder. Run all eligible shards, English shards, or Asian shards alongside individual shard exclusions.
+- Add Randomize All to Appearance. The Seeder applies the chosen appearance before reserving a fantasy name for that race and sex. Changed appearance and naming settings apply to future creations, with submitted names preserved for recovery.
+- Expand gargoyle single-name pools to 5,496 male and 3,381 female names.
+- Screen fantasy names for common blocked fragments within each word and across the space in a full name. Recheck unsubmitted reservations before reuse.
+- Bring the selected Classic Client window to the foreground for the shard scan's opening screen check.
+- Publish a Windows x64 installer alongside the portable and full source ZIPs.
+
 # 1.8.0-beta.5
 
 - The pointer is no longer moved to a corner at any point. Checklist item 1 asks for tooltips off or a 5000 ms delay, and item 3 includes AutoStart at Login.

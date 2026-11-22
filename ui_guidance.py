@@ -122,6 +122,11 @@ def explain_error(error):
                       'Krampuslauf clicks only on the 640×480 login, shard, character and creation menus. '
                       'Return Classic Client to one of those menus, keep Windows display scaling unchanged, '
                       'then use Setup > Game Client > Check current screen.', 'client')
+    if 'open the shard list before scanning' in text:
+        return advise('Check the shard list',
+                      'Keep Classic Client fully visible, open the shard list, and scroll to the top. '
+                      'Use Setup > Game Client > Check current screen. When it shows servers, '
+                      'retry Setup > Shards > Scan / resume.', 'client')
     if any(t in text for t in ('row geometry', 'row/spacing', 'shard row spacing')):
         return advise('Check the shard row spacing',
                       'Open Shards and correct the row spacing. Return the game’s shard list '
@@ -145,12 +150,14 @@ def explain_error(error):
         return advise('Choose this account’s local history',
                       'Open Automation > Character Seeder. Choose one of the 15 accounts. '
                       'The selected account loads its saved history automatically; the nickname is optional.', 'seeder')
-    if any(t in text for t in ('name prefix', 'saved fantasy-name assignments', 'previously assigned names',
-                              'naming mode', 'fantasy-name style', 'single, full, or mixed')):
+    if 'name prefix' in text or 'prefix must contain' in text:
+        return advise('Check the name prefix',
+                      'Open Automation > Appearance. For Shard + Slot names, enter 1–10 letters '
+                      'without spaces or digits.', 'looks')
+    if any(t in text for t in ('naming mode', 'fantasy-name style', 'single, full, or mixed')):
         return advise('Check the naming options',
-                      'Open Automation > Appearance. A prefix must contain 1–10 letters, with no digits. '
-                      'Use the same naming mode and fantasy style that you used for unfinished characters, '
-                      'and keep already assigned names.', 'looks')
+                      'Open Automation > Appearance. Choose Shard + Slot or Fantasy. '
+                      'For Fantasy names, choose Single Name, First + Last, or Mixed.', 'looks')
     if any(t in text for t in ('slot-skip', 'slot rule', 'slot skips', 'skip_slots')):
         return advise('Correct the slot-skip entry',
                       'Open Automation > Gift Cycler. Use an exact shard name and slots 1–7, '
@@ -158,8 +165,8 @@ def explain_error(error):
                       'then click Save slot skips.', 'gift')
     if 'every shard is excluded' in text or 'no included shards' in text:
         return advise('Include at least one shard',
-                      'Open Automation > Gift Cycler. Select a shard in the exclusion list '
-                      'and click All shards before starting.', 'gift')
+                      'Open Automation > Gift Cycler. Check at least one shard in the selected '
+                      'group, or pick a different shard group.', 'gift')
     if 'choose a gift cycle' in text:
         return advise('Start a gift cycle',
                       'Open Automation > Gift Cycler and click New cycle / new account. '

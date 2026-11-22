@@ -9,6 +9,7 @@ import pytest
 
 from ui_layout import LAYOUTS, NAVIGATION, FONT_PT, PROJECT_URL, layout_issues
 from setup_checklist import checklist_from
+from shard_policy import SHARD_GROUP_OPTIONS
 from ui_assets import windows_text, artwork_path
 from activity_history import ActivityHistory
 
@@ -98,10 +99,10 @@ def mounted():
               INK='ink', CARD='card', PANEL='panel',
               ACCENT='accent', MUTED='muted', windows_text=windows_text,
               net_integer=int, CONFIG_FILE='temporary-settings',
-              checklist_from=checklist_from,
+              checklist_from=checklist_from, SHARD_GROUP_OPTIONS=SHARD_GROUP_OPTIONS,
               atomic_json=lambda path, data: written.append(data.copy()))
     cls = actual_methods(['mount_page', 'layout_action', 'save_settings', 'format_slot_rules',
-                          'update_seed_name_mode'], ns)
+                          'update_seed_name_mode', 'randomize_all_appearance', 'sync_shard_group'], ns)
     app = cls()
     app.cfg = dict(shards=['Legends', 'Atlantic'], gift_wait=9, row_spacing=25,
                    post_logout_seconds=7, online_cooldown_seconds=305,
@@ -156,6 +157,7 @@ def test_distributed_settings_round_trip_without_saving_window_title(mounted):
     app.theme_pick.SelectedIndex = 1
     app.seed_mode_pick.SelectedIndex = 1
     app.seed_style_pick.SelectedIndex = 0
+    app.seed_prefix_field.Text = 'unused prefix'
     app.save_settings()
     result = written[-1]
     assert result['gift_wait'] == 15
@@ -164,6 +166,7 @@ def test_distributed_settings_round_trip_without_saving_window_title(mounted):
     assert result['appearance_theme'] == 'light'
     assert result['seed_naming_mode'] == 'fantasy'
     assert result['seed_fantasy_style'] == 'single'
+    assert result['seed_name_prefix'] == 'Llama'
     assert result['window_title'] == ''
     assert result['account_cap'] == 7 and result['visible_rows'] == 9
 
@@ -175,6 +178,27 @@ def test_naming_controls_follow_mode_and_routes_bind_to_their_own_target(mounted
     assert app.seed_style_pick.Enabled and not app.seed_prefix_field.Enabled
     app.layout_action('page:client')(None, None)
     app.show_page.assert_called_once_with('client')
+
+
+def test_shard_group_controls_share_and_save_the_selection(mounted):
+    app, written = mounted
+    assert app.gift_shard_group.Items == app.seed_shard_group.Items == [
+        'All shards', 'English shards', 'Asian shards']
+    for picker, index, group in ((app.seed_shard_group, 2, 'asian'),
+                                  (app.gift_shard_group, 1, 'english')):
+        picker.SelectedIndex = index
+        app.sync_shard_group(picker, None)
+        assert app.gift_shard_group.SelectedIndex == app.seed_shard_group.SelectedIndex == index
+        app.save_settings()
+        assert written[-1]['shard_group'] == group
+
+
+def test_randomize_all_button_enables_appearance_and_saves_mode(mounted):
+    app, _ = mounted
+    app.layout_action('randomize_all_appearance')(None, None)
+    assert app.app_enabled.Checked
+    assert app.app_mode.Items[app.app_mode.SelectedIndex] == 'Randomize All'
+    app.save_appearance.assert_called_once_with(None, None)
 
 
 def test_account_settings_snapshots_preserve_exclusions_capacity_and_cycle():

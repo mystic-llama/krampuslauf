@@ -1,6 +1,6 @@
 # Krampuslauf — first-time configuration
 
-For **1.8.0-beta.5**, using the official Ultima Online Classic Client and Razor Enhanced.
+For **1.8.0-beta.6**, using the official Ultima Online Classic Client and Razor Enhanced.
 
 Follow the steps in order. The bright **NEXT** messages in the application point to the next tab. The usual path is **Setup → Game client → Shards → Automation**.
 

@@ -2,7 +2,7 @@
 
 Settings live in cfg['appearance']:
     enabled: bool             - off keeps the game's default appearance
-    mode: 'fixed' | 'random'  - fixed: at most one tick per group
+    mode: 'fixed' | 'random' | 'all' - all uses every valid option
     sex, race: [names]        - none ticked = Male / Human
     styles: {group: [index]}  - none ticked = keep the game's default style
     skin: {race: [cell]}      - no cells = random; cell = row * columns + column
@@ -17,6 +17,7 @@ import random
 SEXES = ('male', 'female')
 RACES = ('human', 'elf', 'gargoyle')
 PARTS = ('hair', 'facial')
+MODES = ('fixed', 'random', 'all')
 PROFESSIONS = ('samurai', 'ninja', 'paladin', 'necromancer', 'warrior', 'mage', 'blacksmith')
 
 def choose_profession(cfg, rng=None):
@@ -95,14 +96,27 @@ def style_group(race, sex, part):
     return key if key in STYLE_OPTIONS else None
 
 
+def selection_pools(cfg):
+    """Expand Randomize All without overwriting the saved selection filters."""
+    look = settings(cfg)
+    if look['mode'] == 'all':
+        look.update(sex=SEXES, race=RACES,
+                    styles={key: range(len(options)) for key, options in STYLE_OPTIONS.items()},
+                    skin={race: range(cols * rows) for race, (cols, rows) in SKIN_GRIDS.items()})
+        for part, field in COLOR_FIELDS.items():
+            look[field] = {race: range(cols * rows) for race, (cols, rows) in COLOR_GRIDS.items()
+                           if part in COLOR_ASSETS.get(race, {})}
+    return look
+
+
 def validate(cfg):
     """Problems that must be fixed before a creation run; [] when ready."""
     look = settings(cfg)
-    if not look['enabled']:
+    if not look['enabled'] or look['mode'] == 'all':
         return []
     issues = []
-    if look['mode'] not in ('fixed', 'random'):
-        issues.append('Appearance mode must be Fixed or Random.')
+    if look['mode'] not in MODES:
+        issues.append('Choose Fixed, Random from selected, or Randomize All.')
     fixed = look['mode'] == 'fixed'
     for field, allowed in (('sex', SEXES), ('race', RACES)):
         values = look[field]
@@ -141,7 +155,7 @@ def choose(cfg, rng=None):
     Returns race, sex, hair/facial list indices (None = keep the game default)
     and the skin cell (unselected shades are randomized).
     """
-    look = settings(cfg)
+    look = selection_pools(cfg)
     if not look['enabled']:
         return None
     issues = validate(cfg)
@@ -219,7 +233,7 @@ def list_item_point(index, first, spacing):
 
 def required_points(cfg):
     """Click points this appearance configuration needs, keyed by reason."""
-    look = settings(cfg)
+    look = selection_pools(cfg)
     if not look['enabled']:
         return []
     keys = ['app_sex_' + s for s in SEXES] + ['app_race_' + r for r in RACES]

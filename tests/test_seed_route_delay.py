@@ -1,4 +1,5 @@
-"""World-entry pause behavior shared by standalone and combined character creation."""
+"""Appearance, naming and world-entry behavior in the shared creation path."""
+import random
 import time
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -54,6 +55,40 @@ def test_configured_pause_precedes_identity_recheck_and_route(creation_worker, d
     assert any(event[0] == 'log' and 'Waiting {} seconds before the inn route'.format(expected) in event[1]
                for event in events)
     assert record['created'] == record['completed'] == ['Arin Vale']
+
+
+@pytest.mark.parametrize('look,race,sex', [
+    ({'race': ['elf'], 'sex': ['male']}, 'elf', 'male'),
+    ({'mode': 'random', 'race': ['human', 'elf', 'gargoyle'], 'sex': ['male', 'female']},
+     'gargoyle', 'female'),
+])
+def test_seed_one_applies_appearance_before_reserving_and_typing_a_name(
+        creation_worker, monkeypatch, tmp_path, look, race, sex):
+    worker, events, record, _ = creation_worker
+    monkeypatch.setattr(seeder_engine, 'APP_DIR', tmp_path)
+    monkeypatch.setattr(seeder_engine, 'SEED_PROGRESS_FILE', tmp_path / 'seeder_progress.json')
+    del worker.apply_appearance
+    del worker.seed_name_for_slot
+    worker.cfg['appearance'] = {'enabled': True, **look}
+    worker._appearance_rng = random.Random(5)
+    worker.seed_init('test account')
+    worker.click = lambda point: events.append(('click', point))
+    seeder_engine.pg.write.side_effect = cycler_engine.Cancelled('Name typed')
+    with pytest.raises(cycler_engine.Cancelled, match='Name typed'):
+        worker.seed_one(0, 'Legends', already_on_creation=True)
+    name = record['name_assignments']['1']
+    generator = worker.fantasy_name_generator
+    assert generator.matches(name, category=race + '_' + sex)
+    assert name.lower() in generator.used_names
+    points = worker.cfg['points']
+    appearance_applied = next(i for i, (kind, value) in enumerate(events)
+                              if kind == 'log' and value.startswith('Appearance selected:'))
+    name_reserved = next(i for i, (kind, value) in enumerate(events)
+                        if kind == 'log' and value.startswith('FANTASY NAME RESERVED:'))
+    assert events.index(('click', points['app_race_' + race])) < appearance_applied
+    assert events.index(('click', points['app_sex_' + sex])) < appearance_applied
+    assert appearance_applied < name_reserved < events.index(('click', points['seed_name_field']))
+    seeder_engine.pg.write.assert_called_once_with(name, interval=.075)
 
 
 def test_identity_change_during_pause_never_sends_route(creation_worker):

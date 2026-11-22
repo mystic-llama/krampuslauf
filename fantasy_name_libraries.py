@@ -25,15 +25,43 @@ NAME_LIBRARIES = {
         "surnames": "Amberfall Ashgrove Autumnvale Brightwood Cloudsong Copperleaf Dawnvale Deepwood Dewglade Duskrill Emberfall Everleaf Fairwind Fernvale Frostbloom Glendell Goldleaf Greenwillow Greywind Highmere Hollowglen Ironbark Jadewood Larkspur Leafsong Lightfall Mistfern Moonweave Mossdale Nightbloom Oakvale Pineglen Rainfern Riverleaf Rosewood Runeweave Silverfern Skybloom Snowfern Starweave Stillglen Stonehaven Stormsong Sunleaf Thornvale Valeweave Wildrose Willowglen Windsong Winterbloom Wispglen".split()
     },
     "gargoyle_male": {
-        "curated": "Vas Des Wis In Por Grav Hur Ylem Quas Ort Rel San Jux Kal Mani Xen An Corp Bet".split(),
-        "first_syll": "Va De Wi I Po Gra Hu Yle Qua Or Re Sa Ju Ka Ma Xe A Co Be Ta Te Ti To Tu Ga Ge Gi Go Gu Ha He Hi Ho Hu Ke Ki Ko Ku".split(),
-        "last_syll": "as es is os us ar er ir or ur at et it ot ut lem len ram rom lak rek mik nok pex rex tex vok zex gar gor kur kar mor nor zor tar".split(),
-        "surnames": [] # Gargoyles generally do not use surnames
+        "curated": (
+            "Vas Des Wis In Por Grav Hur Ylem Quas Ort Rel San Jux Kal Mani Xen An Corp "
+            "Bet Krazgor Azgorek Brakthar Draxtor Gharnok Khevrak Kraveth Quovrak Sarnok Zolthar"
+        ).split(),
+        "first_syll": (
+            "Va De Wi I Po Gra Hu Yle Qua Or Re Sa Ju Ka Ma Xe A Co Be Ta Te Ti To Tu "
+            "Ga Ge Gi Go Gu Ha He Hi Ho Ke Ki Ko Ku Aza Balu Bra Bre Bro Bru Dha Dre "
+            "Dro Dru Gha Ghe Ghi Gho Ghu Kha Khe Kho Khu Kra Kre Kro Kru Pla Pra Pre "
+            "Pro Quae Sko Sku Tho Thu Ulo Zha Zhe Zho Zhu"
+        ).split(),
+        "last_syll": (
+            "as es is os us ar er ir or ur at et it ot ut lem len ram rom lak rek "
+            "mik nok pex rex tex vok zex gar gor kur kar mor nor zor tar "
+            "ak ek ik ok uk ax ex ix ox ux ast esk isk ost usk ath eth ith oth uth "
+            "ban born dar drax dren duk fex gol grok kan kord kran mak nak kaz tharn tor zek"
+        ).split(),
+        "surnames": []
     },
     "gargoyle_female": {
-        "curated": "Vasa Desa Wisa Ina Pora Grava Hura Ylema Quasa Orta Rela Sana Juxa Kala Mania Xena Ana Corpa Beta".split(),
-        "first_syll": "Va De Wi I Po Gra Hu Yle Qua Or Re Sa Ju Ka Ma Xe A Co Be Ta Te Ti To Tu Ga Ge Gi Go Gu Ha He Hi Ho Hu Ke Ki Ko Ku".split(),
-        "last_syll": "sa sha na ma la ra ta va za ba da ga ka pa cha tha gha zha xya nya mya lya dya tya rya rna mna".split(),
-        "surnames": [] 
+        "curated": (
+            "Vasa Desa Wisa Ina Pora Grava Hura Ylema Quasa Orta Rela Sana Juxa Kala "
+            "Mania Xena Ana Corpa Beta Ashkava Drazhima Gharzila Izketha Khazmira "
+            "Kravetha Nuzhara Orzetha Quazmira Rhothela Skazhera Thazmara Uzhara Vrazhela Xazira "
+            "Azhrima Brelzara Dravetha Eshkora Ghorvaya Ikrasha Izvetha Khazhara Krezmira "
+            "Malkvera Orvetha Quazhara Raskhira Skozhera Uldhera Vahrasha Zorvaya"
+        ).split(),
+        "first_syll": (
+            "Va De Wi I Po Gra Hu Yle Qua Or Re Sa Ju Ka Ma Xe A Co Be Ta Te Ti To Tu "
+            "Ga Ge Gi Go Gu Ha He Hi Ho Ke Ki Ko Ku Azha Bra Dre Gha Ghi Kha Khi Kra "
+            "Kre Kri Pra Sha Shra Tha Thi Ulo Yza Zha Zhe Zhi Zra Zri"
+        ).split(),
+        "last_syll": (
+            "sa sha na ma la ra ta va za ba da ga ka pa cha tha gha zha xya nya mya lya "
+            "dya tya rya rna mna bala bela vira dera dira jara jera kera kira kora "
+            "kvara lera mora nara nira quara rava riza sara shara shira shura "
+            "tala tera thara thira thura vara vera zara"
+        ).split(),
+        "surnames": []
     }
 }

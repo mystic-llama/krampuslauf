@@ -1,12 +1,13 @@
 """Cross-run fantasy-name reservations without Windows, RE, or a live client."""
 import ast
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
 
 from fantasy_name_generator import FantasyNameGenerator, is_valid_name, STYLES
-from seeder_rules import generated_name, account_token
+from seeder_rules import generated_name, account_token, shard_abbreviation
 
 ROOT = Path(__file__).resolve().parents[1]
 tree = ast.parse((ROOT / 'seeder_engine.py').read_text(encoding='utf-8'))
@@ -38,7 +39,7 @@ class FantasySeederTests(unittest.TestCase):
                   load_json=load_json, atomic_json=atomic_json, FantasyNameGenerator=FantasyNameGenerator,
                   STYLES=STYLES, is_valid_fantasy_name=is_valid_name,
                   SeedNotReady=SeedNotReady, generated_name=generated_name,
-                  account_token=account_token)
+                  account_token=account_token, shard_abbreviation=shard_abbreviation, re=re)
         exec(compile(ast.fix_missing_locations(module), '<seeder-name-methods>', 'exec'), ns)
         self.cls = ns['SeederOps']
     def new_worker(self, mode='fantasy', style='mixed', user='local session'):
@@ -70,13 +71,60 @@ class FantasySeederTests(unittest.TestCase):
         self.assertEqual(reboot.seed_name_for_slot('Catskills', 0, 1, assign=False), name)
         self.assertEqual(reboot.seed_name_for_slot('Catskills', 0, 1, assign=True), name)
         self.assertEqual(reboot.seed_record('Catskills')[1]['pending'], name)
-    def test_changed_format_or_style_cannot_rename_in_progress_shard(self):
-        w = self.new_worker(style='full')
-        w.seed_name_for_slot('Catskills', 0, 1, assign=True)
-        with self.assertRaises(SeedNotReady):
-            self.new_worker(mode='convention').seed_name_for_slot('Catskills', 0, 1)
-        with self.assertRaises(SeedNotReady):
-            self.new_worker(style='single').seed_name_for_slot('Catskills', 0, 2)
+    def test_resume_uses_new_style_for_unsubmitted_slots_on_the_same_shard(self):
+        w = self.new_worker(style='single')
+        created = w.seed_name_for_slot('Catskills', 0, 0, assign=True)
+        old_reservation = w.seed_name_for_slot('Catskills', 0, 1, assign=True)
+        w.seed_update('Catskills', created=[created], completed=[created], assigned_name_style='single')
+
+        resumed = self.new_worker(style='full')
+        self.assertEqual(resumed.seed_name_for_slot('Catskills', 0, 0), created)
+        self.assertIsNone(resumed.seed_name_for_slot('Catskills', 0, 1))
+        new_name = resumed.seed_name_for_slot('Catskills', 0, 1, assign=True)
+        self.assertEqual(len(new_name.split()), 2)
+        self.assertIn(old_reservation.lower(), resumed.fantasy_name_generator.used_names)
+        record = resumed.seed_record('Catskills')[1]
+        self.assertEqual(record['created'], [created])
+        self.assertEqual(record['name_assignments'], {'1': created, '2': new_name})
+
+    def test_naming_mode_change_preserves_a_pending_name_and_allows_new_slots(self):
+        w = self.new_worker(style='single')
+        pending = w.seed_name_for_slot('Catskills', 0, 1, assign=True)
+        w.seed_update('Catskills', pending=pending)
+        resumed = self.new_worker(mode='convention')
+        self.assertEqual(resumed.seed_name_for_slot('Catskills', 0, 1), pending)
+        self.assertEqual(resumed.seed_name_for_slot('Catskills', 0, 2), 'Llama CAT c')
+        self.assertEqual(resumed.seed_record('Catskills')[1]['pending'], pending)
+
+    def test_unsubmitted_name_is_replaced_when_the_new_race_uses_a_different_pool(self):
+        worker = self.new_worker(style='single')
+        worker.seed_update('Catskills', name_assignments={'1': 'Aelar', '2': 'Aerin'},
+                           created=['Aerin'], completed=['Aerin'])
+        gargoyle = {'race': 'gargoyle', 'sex': 'male'}
+        name = worker.seed_name_for_slot('Catskills', 0, 0, assign=True, choice=gargoyle)
+        self.assertNotEqual(name, 'Aelar')
+        self.assertTrue(worker.fantasy_name_generator.matches(name, category='gargoyle_male'))
+        self.assertIn('aelar', worker.fantasy_name_generator.used_names)
+        self.assertEqual(worker.seed_name_for_slot('Catskills', 0, 0, assign=True, choice=gargoyle), name)
+        self.assertEqual(worker.seed_name_for_slot('Catskills', 0, 1, assign=True, choice=gargoyle), 'Aerin')
+
+    def test_previously_reserved_name_with_a_blocked_fragment_is_replaced(self):
+        worker = self.new_worker(style='full')
+        worker.seed_update('Catskills', name_assignments={'1': 'Shitha Rowan'})
+        name = worker.seed_name_for_slot('Catskills', 0, 0, assign=True,
+                                         choice={'race': 'human', 'sex': 'female'})
+        self.assertNotEqual(name, 'Shitha Rowan')
+        self.assertTrue(worker.fantasy_name_generator.matches(name, style='full', category='human_female'))
+        self.assertIn('shitha rowan', worker.fantasy_name_generator.used_names)
+
+    def test_legacy_convention_name_is_kept_when_combined_run_changes_to_fantasy(self):
+        w = self.new_worker(mode='convention')
+        created = 'Former CAT b'
+        w.seed_update('Catskills', created=[created], completed=[created],
+                      combined_shard={'status': 'in_progress', 'next_slot': 2})
+        resumed = self.new_worker(style='full')
+        self.assertEqual(resumed.seed_name_for_slot('Catskills', 0, 1), created)
+        self.assertEqual(len(resumed.seed_name_for_slot('Catskills', 0, 2, assign=True).split()), 2)
     def test_different_slots_and_accounts_get_distinct_names(self):
         w = self.new_worker(style='full')
         names = [w.seed_name_for_slot('Catskills', 0, n, assign=True) for n in range(6)]

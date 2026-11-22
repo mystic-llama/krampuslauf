@@ -79,7 +79,7 @@ KNOWN_SHARDS = [
 DEFAULTS = {
     "window_title": "", "shards": supported_shards(INITIAL_ORDER),
     "navigation_shards": list(INITIAL_ORDER),
-    "excluded": [], "verified_order": False,
+    "excluded": [], "shard_group": "all", "verified_order": False,
     "points": default_points(), "row_spacing": 25, "visible_rows": 9,
     "gift_wait": 12, "menu_timeout": 150, "world_timeout": 55,
     "match_threshold": .83,
@@ -1355,25 +1355,25 @@ class GameWorker:
                                "Return there manually; no blind Enter attempted.")
 
     def run(self, *, creation_only=False):
-        from shard_policy import is_supported
-        shards = self.cfg["shards"]
-        excluded = set(self.cfg["excluded"])
+        from shard_policy import run_shards
+        targets = run_shards(self.cfg)
+        target_names = {shard for _, shard in targets}
         self.refresh_seeded_roster()
-        if self.roster_sensitive_shards:
+        sensitive_targets = self.roster_sensitive_shards & target_names
+        if sensitive_targets:
             self.say('Roster changes detected on {}. Old slot-number completions on these shards are not trusted; checking character fingerprints instead.'.format(
-                ', '.join(sorted(self.roster_sensitive_shards))))
-        tasks = [(i, shard, n) for i, shard in enumerate(shards)
-                 if is_supported(shard) and shard not in excluded for n in occupied_slots_for(self.cfg, shard)]
+                ', '.join(sorted(sensitive_targets))))
+        tasks = [(shard, slot) for _, shard in targets for slot in occupied_slots_for(self.cfg, shard)]
         total = len(tasks)
-        done = sum(1 for _, shard, slot in tasks
-                   if shard not in self.roster_sensitive_shards
+        done = sum(1 for shard, slot in tasks
+                   if shard not in sensitive_targets
                    and "{}|{}".format(shard, slot) in self.completed)
         done += sum(len(self.gift_identity_history.get(shard, set()))
-                    for shard in self.roster_sensitive_shards if shard not in excluded)
+                    for shard in sensitive_targets)
         done = min(done, total)
         self.emit("PROGRESS|{}|{}".format(done, total))
         self.say("{} candidate slots on {} included shards, {} completed this cycle. Empty slots are not gifts.".format(
-            total, len([s for s in shards if s not in excluded]), done))
+            total, len(targets), done))
         with BridgeSession(self.stop) as bridge:
             self.bridge = bridge
             try:
@@ -1382,13 +1382,8 @@ class GameWorker:
                     raise RuntimeError("A character is already logged in. Start from a menu screen.")
                 if self.cfg.get("create_missing") and hasattr(self, "retire_interrupted_routes"):
                     self.retire_interrupted_routes()
-                for index, shard in enumerate(shards):
+                for index, shard in targets:
                     self.check()
-                    if not is_supported(shard):
-                        continue
-                    if shard in excluded:
-                        self.say("SKIPPED main shard: {}".format(shard))
-                        continue
                     if creation_only and hasattr(self, 'seed_record'):
                         from account_profiles import shard_seed_complete
                         _, saved_seed = self.seed_record(shard)

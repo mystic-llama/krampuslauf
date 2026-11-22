@@ -1,5 +1,14 @@
 """Supported destinations, separate from the real client's physical list rows."""
 UNSUPPORTED_SHARDS = frozenset(('siege perilous', 'mugen'))
+ASIAN_SHARDS = frozenset((
+    'arirang', 'asuka', 'balhae', 'formosa', 'hokuto',
+    'izumo', 'mizuho', 'sakura', 'wakoku', 'yamato',
+))
+SHARD_GROUP_OPTIONS = (
+    ('All shards', 'all'),
+    ('English shards', 'english'),
+    ('Asian shards', 'asian'),
+)
 
 
 def is_supported(name):
@@ -8,6 +17,19 @@ def is_supported(name):
 
 def supported_shards(names):
     return [name for name in names if is_supported(name)]
+
+
+def matches_shard_group(name, group):
+    language = 'asian' if name.strip().casefold() in ASIAN_SHARDS else 'english'
+    return group == 'all' or group == language
+
+
+def run_shards(config):
+    """Select run targets while retaining their indices in the full shard order."""
+    excluded = set(config.get('excluded', []))
+    group = config.get('shard_group', 'all')
+    return [(index, name) for index, name in enumerate(config['shards'])
+            if is_supported(name) and name not in excluded and matches_shard_group(name, group)]
 
 
 def normalize_shards(config):

@@ -10,7 +10,7 @@ files, print anything, or interact with the game.
 
 Keep ONE generator instance for the application. An optional JSON history
 remembers names across restarts. Format validation is local; the game can have
-additional naming restrictions. No character classes or gender categories.
+additional naming restrictions. Optional categories select race and sex pools.
 """
 
 import argparse
@@ -26,6 +26,33 @@ import threading
 __version__ = "1.0.0"
 MAX_NAME_LENGTH = 16
 STYLES = ("single", "full", "mixed")
+
+# Screen invented names conservatively for fragments that can also appear
+# inside innocent names. The game can apply additional naming rules.
+BLOCKED_NAME_FRAGMENTS = (
+    "anal", "anus", "arse", "ass", "bastard", "bitch", "bollock", "boner",
+    "boob", "bugger", "chode", "clit", "cock", "coon", "crap", "cum", "cunt",
+    "damn", "dick", "dildo", "dyke", "fag", "fart", "fck", "fellat", "fuck",
+    "fuk", "gook", "jizz", "kike", "knob", "milf", "nigga", "nigger",
+    "paki", "pecker", "penis", "piss", "poop", "prick", "pube", "pussy",
+    "queef", "rape", "retard", "scrot", "sex", "shat", "shit", "shyt",
+    "skank", "slut", "spic", "testicl", "tit", "twat", "vagin", "wank",
+    "whor", "yiff",
+)
+_BLOCKED_PATTERN = re.compile("|".join(BLOCKED_NAME_FRAGMENTS))
+_BLOCKED_PREFIXES = frozenset(fragment[:length] for fragment in BLOCKED_NAME_FRAGMENTS
+                              for length in range(1, len(fragment)))
+_MAX_BLOCKED_PREFIX = max(map(len, _BLOCKED_PREFIXES))
+
+
+def _contains_blocked_fragment(name):
+    return _BLOCKED_PATTERN.search(name.lower().replace(" ", "")) is not None
+
+
+def _boundary_prefix(word):
+    """Find the longest suffix that can start a blocked fragment across a space."""
+    tail = word.lower()[-_MAX_BLOCKED_PREFIX:]
+    return next((tail[i:] for i in range(len(tail)) if tail[i:] in _BLOCKED_PREFIXES), "")
 
 
 # ============================================================================
@@ -276,19 +303,25 @@ class _NameSpace:
     def __init__(self, first_names, surnames, style, max_length):
         self.style = style
         self.max_length = max_length
-        self.first_names = tuple(n for n in first_names if len(n) <= max_length)
+        self.first_names = tuple(n for n in first_names
+                                 if len(n) <= max_length and not _contains_blocked_fragment(n))
         self.first_keys = {n.lower() for n in self.first_names}
+        surnames = tuple(n for n in surnames if not _contains_blocked_fragment(n))
         self.surname_keys = {n.lower() for n in surnames}
         self.rows = []
         self.ends = []
         self.size = len(self.first_names) if style == "single" else 0
         if style == "full":
-            by_budget = {}
+            by_budget_and_prefix = {}
             for first in self.first_names:
                 budget = max_length - len(first) - 1
-                if budget not in by_budget:
-                    by_budget[budget] = tuple(s for s in surnames if len(s) <= budget)
-                choices = by_budget[budget]
+                prefix = _boundary_prefix(first)
+                key = (budget, prefix)
+                if key not in by_budget_and_prefix:
+                    by_budget_and_prefix[key] = tuple(
+                        s for s in surnames if len(s) <= budget
+                        and (not prefix or not _contains_blocked_fragment(prefix + s)))
+                choices = by_budget_and_prefix[key]
                 if first.lower() in self.surname_keys:
                     choices = tuple(s for s in choices if s.lower() != first.lower())
                 if choices:
@@ -311,7 +344,8 @@ class _NameSpace:
         if self.style == "single":
             return len(parts) == 1 and key in self.first_keys
         return (len(parts) == 2 and parts[0] in self.first_keys and
-                parts[1] in self.surname_keys and parts[0] != parts[1])
+                parts[1] in self.surname_keys and parts[0] != parts[1]
+                and not _contains_blocked_fragment(key))
 
 
 from fantasy_name_libraries import NAME_LIBRARIES
@@ -439,6 +473,12 @@ class FantasyNameGenerator:
             spaces = self._get_spaces(style, max_length, category)
             return sum(space.size - sum(space.contains(n) for n in self._used)
                        for space in spaces)
+
+    def matches(self, name, style="mixed", max_length=MAX_NAME_LENGTH, category=None):
+        """Check pool membership regardless of whether the name was reserved."""
+        key = _name_key(name)
+        with self._lock:
+            return any(space.contains(key) for space in self._get_spaces(style, max_length, category))
 
     def _choose_unused(self, space, used):
         # Fast for ordinary use; the exhaustive fallback guarantees termination

@@ -74,6 +74,20 @@ def test_restart_skips_finished_shards_without_any_client_input(monkeypatch):
     second.seed_one.assert_not_called()
 
 
+def test_standalone_seeder_can_switch_groups_without_resetting_progress(monkeypatch):
+    records = {}
+    asian = worker(monkeypatch, records)
+    asian.cfg.update(shard_group='asian', excluded=['Europa'])
+    seeder_engine.SeederOperations.run_seeder(asian)
+    assert asian.reach_characters.call_args_list == [((2,),)]
+    assert set(records) == {'Balhae'}
+    english = worker(monkeypatch, records)
+    english.cfg.update(shard_group='english', excluded=['Europa'])
+    seeder_engine.SeederOperations.run_seeder(english)
+    assert english.reach_characters.call_args_list == [((0,),)]
+    assert all(shard_seed_complete(records[shard], 7) for shard in ('Balhae', 'Drachenfels'))
+
+
 def test_halt_retains_current_shard_checkpoint_and_completed_shards(monkeypatch):
     records = {shard:{'standalone_seed':{'status':'complete','cap':7}}
                for shard in ('Drachenfels','Europa')}

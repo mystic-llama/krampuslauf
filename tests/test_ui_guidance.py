@@ -34,7 +34,7 @@ def test_creation_capacity_error_names_the_setting_and_destination():
     ('No unfinished or pending creations in this Seeder history', 'seeder', 'Select the account'),
     ('Creation outcome unknown; PENDING', 'seeder', 'restart'),
     ('No krampuslauf_bridge.py heartbeat', 'diagnostics', 'AutoStart at Login'),
-    ('No included shards: every shard is excluded', 'gift', 'All shards'),
+    ('No included shards in the selected shard group.', 'gift', 'Check at least one shard'),
     ('Logout NOT verified', 'status', 'log out manually'),
     ('Close Razor Enhanced and Classic Client', 'profiles', 'Close both'),
 ])

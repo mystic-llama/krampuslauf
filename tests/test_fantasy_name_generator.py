@@ -113,6 +113,19 @@ class FantasyNameTests(unittest.TestCase):
             self.assertEqual(set(actual), expected)
             self.assertEqual(generator.remaining(style, limit), 0)
 
+    def test_blocked_fragments_are_removed_from_words_and_across_the_space(self):
+        generator = names.FantasyNameGenerator(
+            first_names=("Shitha", "Shi", "Arin", "Cassia"),
+            surnames=("Rowan", "Tha", "Pissarro"),
+            used_names=["Shitha Rowan", "Shi Tha"])
+        expected = {"Shi Rowan", "Arin Rowan", "Arin Tha"}
+        self.assertEqual(generator.remaining("full"), len(expected))
+        self.assertFalse(generator.matches("sHItHa RoWaN"))
+        self.assertFalse(generator.matches("sHI tHA"))
+        self.assertEqual(set(generator.generate_many(len(expected), "full")), expected)
+        self.assertEqual(generator.remaining("full"), 0)
+        self.assertEqual(set(generator.generate_many(2, "single")), {"Shi", "Arin"})
+
     def test_exhausted_pool_never_falls_back_to_digits_or_duplicates(self):
         generator = self.tiny()
         generator.generate_many(generator.remaining())
@@ -246,3 +259,12 @@ def test_all_category_styles_share_duplicate_history(tmp_path):
             results.extend(batch)
     assert len(results) == len({n.casefold() for n in results})
     assert names.FantasyNameGenerator(history_path=path).used_names == generator.used_names
+
+
+def test_gargoyle_single_name_pools_remain_as_large_as_other_races():
+    generator = names.FantasyNameGenerator()
+    for sex, minimum in (('male', 5496), ('female', 3381)):
+        gargoyle = generator.remaining('single', category='gargoyle_' + sex)
+        assert gargoyle >= minimum
+        assert gargoyle >= generator.remaining('single', category='human_' + sex)
+        assert gargoyle >= generator.remaining('single', category='elf_' + sex)

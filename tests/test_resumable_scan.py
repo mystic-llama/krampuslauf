@@ -17,6 +17,7 @@ def scanner_module():
     fake.KNOWN_SHARDS=[f'Shard{i}' for i in range(27)]
     fake.APP_DIR=Path(tempfile.gettempdir())
     fake.SYNC_PATIENCE_SECONDS=30.0
+    fake.focus_game=lambda ignored:None
     fake.selected_window=lambda ignored:None
     spec=importlib.util.spec_from_file_location('headless_scanner',ROOT/'shard_scanner.py')
     module=importlib.util.module_from_spec(spec)
@@ -98,6 +99,36 @@ class ResumableScanTests(unittest.TestCase):
         self.assertEqual(worker.shard_clicks,2)
         self.assertEqual(shard_map.load_map(self.path,self.cfg,require_complete=False)['shards'],['Shard0'])
         self.assertEqual(worker.learned,[('Shard0','picture')])
+
+    def test_scan_focuses_client_before_capture_and_waits_for_repaint(self):
+        worker = self.create('Shard0')
+        focused_at = []
+        original_state = worker.state
+
+        def state():
+            if not focused_at or worker.clock() - focused_at[0] < .5:
+                return 'unknown'
+            return original_state()
+
+        worker.state = state
+        with patch.object(self.mod, 'focus_game', side_effect=lambda _: focused_at.append(worker.clock())) as focus:
+            self.assertEqual(worker.scan(1), ['Shard0'])
+
+        focus.assert_called_once_with(worker.window_title)
+        self.assertEqual(worker.shard_clicks, 1)
+
+    def test_scan_on_login_reports_detected_menu_without_touching_checkpoint(self):
+        shard_map.save_map(self.path, self.cfg, ['Shard0'], complete=False)
+        worker = self.create('Shard1')
+        worker.current = 'login'
+        worker._last_marker_scores = [(1.0, 'login')]
+
+        with self.assertRaisesRegex(RuntimeError, r'Detected login .*best marker login 1\.00.*No menu input sent'):
+            worker.scan(2)
+
+        self.assertEqual(worker.elapsed, 0)
+        self.assertEqual(worker.shard_clicks + worker.down_clicks + worker.back_clicks, 0)
+        self.assertEqual(shard_map.load_map(self.path, self.cfg, require_complete=False)['shards'], ['Shard0'])
 
     def test_first_scan_waits_for_the_shard_list_after_back(self):
         worker = self.create('Shard0')

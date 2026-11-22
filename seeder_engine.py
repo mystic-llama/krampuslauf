@@ -20,7 +20,7 @@ from cycler_engine import (GameWorker, APP_DIR, SEED_PROGRESS_FILE, SEED_MARKERS
 
 
 import appearance
-from seeder_rules import generated_name, name_hash, account_token
+from seeder_rules import generated_name, name_hash, account_token, shard_abbreviation
 from fantasy_name_generator import (FantasyNameGenerator, STYLES,
                                     is_valid_name as is_valid_fantasy_name)
 from seed_recovery import (current_seed_candidates, pending_seed_candidates,
@@ -98,11 +98,12 @@ class SeederOperations:
 
     def retire_interrupted_routes(self):
         """A fresh logged-out run keeps confirmed characters but never replays their old routes."""
-        from shard_policy import is_supported
+        from shard_policy import is_supported, matches_shard_group
         state = load_json(SEED_PROGRESS_FILE, {})
+        group = self.cfg.get('shard_group', 'all')
         changed = False
         for shard, record in state.get('profiles', {}).get(self.seed_account_id, {}).items():
-            if not is_supported(shard):
+            if not is_supported(shard) or not matches_shard_group(shard, group):
                 continue
             interrupted = (set(record.get('created', [])) - set(record.get('completed', []))
                            - set(record.get('abandoned_routes', [])))
@@ -118,7 +119,7 @@ class SeederOperations:
         """Single persistent history across all local Seeder profiles.
 
         Do not reset used names on a restart or change of account nickname.
-        Name reservations are made *before* entering a creation screen.
+        Name reservations are made after appearance and before typing a name.
         """
         generator = self.fantasy_name_generator
         if generator is None:
@@ -140,51 +141,50 @@ class SeederOperations:
         return generator
 
     def seed_name_for_slot(self, shard, index, ordinal, assign=False, choice=None):
-        """Return a stable name for one shard/slot, or None until assignment.
-
-        For random naming an assignment is saved before any name-entry input.
-        This prevents a retry or mode change from silently renaming a PENDING
-        character. A mismatch between an already-started shard and the current
-        mode is rejected instead of mixing conventions inside one shard.
-        """
+        """Keep submitted names stable and apply current settings to future names."""
         mode = self.cfg.get('seed_naming_mode', 'fantasy')
         if mode not in ('convention', 'fantasy'):
             raise SeedNotReady('Unsupported Seeder naming mode: {}'.format(mode))
+        _, record = self.seed_record(shard)
+        key = str(int(ordinal) + 1)
+        assigned = record.get('name_assignments') or {}
+        existing = assigned.get(key)
+        submitted = set(record.get('created', [])) | set(record.get('completed', []))
+        if record.get('pending'):
+            submitted.add(record['pending'])
+        if existing and existing in submitted:
+            return existing
+        # Older combined runs only tracked the slot in Shard + Slot names.
+        if not existing and submitted and (record.get('combined_shard') or record.get('reserved_seeder_shard')):
+            suffix = f' {shard_abbreviation(shard)} {chr(ord("a") + int(ordinal))}'
+            for saved in sorted(submitted):
+                if saved.endswith(suffix) and re.fullmatch(r'[A-Za-z]{1,10}', saved[:-len(suffix)]):
+                    return saved
         if mode == 'convention':
-            _, record = self.seed_record(shard)
-            if record.get('name_assignments'):
-                raise SeedNotReady('This shard has saved fantasy-name assignments. '
-                                   'Select Fantasy naming to resume it safely.')
             return generated_name(self.cfg.get('seed_name_prefix', 'Llama'),
                                   self.seed_nickname, index, ordinal, shard=shard)
         style = self.cfg.get('seed_fantasy_style', 'mixed')
         if style not in STYLES:
             raise SeedNotReady('Unsupported fantasy-name style: {}'.format(style))
-        _, record = self.seed_record(shard)
-        saved_mode = record.get('assigned_name_style')
-        if saved_mode and saved_mode != style:
-            raise SeedNotReady('Previously assigned names on {} use style {}. '
-                               'Restore that style before resuming this shard.'.format(
-                                   shard, saved_mode))
-        key = str(int(ordinal) + 1)
-        assigned = record.get('name_assignments') or {}
-        existing = assigned.get(key)
-        if existing:
-            if not is_valid_fantasy_name(existing):
-                raise SeedNotReady('Saved fantasy name for {} slot {} is invalid; '
-                                   'refusing to overwrite it.'.format(shard, key))
-            return existing
+        if existing and not is_valid_fantasy_name(existing):
+            raise SeedNotReady('Saved fantasy name for {} slot {} is invalid; '
+                               'refusing to overwrite it.'.format(shard, key))
         if not assign:
+            if existing and (style == 'mixed' or (' ' in existing) == (style == 'full')):
+                return existing
             return None
+        choice = choice or {'race': 'human', 'sex': 'male'}
+        category = choice['race'] + '_' + choice['sex']
+        generator = self._fantasy_generator()
+        if existing and generator.matches(existing, style=style, category=category):
+            return existing
         # The generator reserves to disk BEFORE the account progress ledger is
         # updated. If interrupted between those writes, one unused name is
         # consumed; no duplicate creation is possible.
-        choice = choice or {'race': 'human', 'sex': 'male'}
-        category = choice['race'] + '_' + choice['sex']
-        name = self._fantasy_generator().generate(style=style, category=category)
+        name = generator.generate(style=style, category=category)
         updated = dict(assigned)
         updated[key] = name
-        self.seed_update(shard, name_assignments=updated, assigned_name_style=style)
+        self.seed_update(shard, name_assignments=updated)
         self.say('FANTASY NAME RESERVED: {} / slot {} -> {}. Saved before typing.'.format(
             shard, key, name))
         return name
@@ -335,10 +335,6 @@ class SeederOperations:
         ordinal = (int(slot_number) - 1) if slot_number is not None else len(record.get('created', []))
         if ordinal < 0 or ordinal >= (1 if shard.casefold() in PVP_SHARDS else 7):
             raise RuntimeError('Seeder slot out of range for {}: {}'.format(shard, slot_number))
-        # Avoid recreating a previously completed name if a user edits history.
-        name = self.seed_name_for_slot(shard, index, ordinal, assign=False)
-        if name and name in record.get('created',[]):
-            raise RuntimeError('Generated name already recorded; refusing duplicate.')
         if already_on_creation:
             self.seed_wait_marker('seed_appearance',10)
         else:
@@ -347,11 +343,8 @@ class SeederOperations:
                 return False
             self.click(self.cfg['points']['seed_new_button'])
             self.seed_wait_marker('seed_appearance',self.cfg.get('seed_stage_timeout',35))
-        # Only reserve a *new* fantasy name once the creation screen is verified.
-        # Persisted names are always reused on retries, never regenerated.
         choice = self.apply_appearance()
-        if name is None:
-            name = self.seed_name_for_slot(shard, index, ordinal, assign=True, choice=choice)
+        name = self.seed_name_for_slot(shard, index, ordinal, assign=True, choice=choice)
         if name in record.get('created', []):
             raise RuntimeError('Previously created character {} cannot be submitted again.'.format(name))
         # This name-entry routine is OFF by default until the user visually tests
@@ -377,7 +370,10 @@ class SeederOperations:
         if not self.seed_visible('seed_city'):
             raise RuntimeError('City screen changed unexpectedly before final submit. Halting.')
         # From this point forward, an unknown result is a PENDING creation.
-        self.seed_update(shard,pending=name)
+        _, current = self.seed_record(shard)
+        assignments = dict(current.get('name_assignments') or {})
+        assignments[str(ordinal + 1)] = name
+        self.seed_update(shard, pending=name, name_assignments=assignments)
         self.say('PENDING creation recorded for {} / {} BEFORE final submit.'.format(shard,name))
         creation_started=time.time()
         self.click(self.cfg['points']['seed_next'])
@@ -663,9 +659,7 @@ class SeederOperations:
                 self.bridge = None
 
     def run_seeder(self):
-        from shard_policy import is_supported
-        shards=self.cfg['shards']
-        excluded=set(self.cfg.get('excluded',[]))
+        from shard_policy import run_shards
         self.check_seed_setup()
         if self.cfg.get('reserve_transfer_slot', False):
             # Reuse the established row discovery and per-shard handoff. The
@@ -690,13 +684,8 @@ class SeederOperations:
                     raise RuntimeError('Seeder must start from login/shard menu, not from a logged-in character.')
                 self.retire_interrupted_routes()
                 from account_profiles import shard_seed_complete
-                for index,shard in enumerate(shards):
+                for index,shard in run_shards(self.cfg):
                     self.check()
-                    if not is_supported(shard):
-                        continue
-                    if shard in excluded:
-                        self.say('SEEDER SKIPPED main shard: '+shard)
-                        continue
                     limit=int(self.cfg.get('account_cap',7))
                     _, record = self.seed_record(shard)
                     if shard_seed_complete(record, limit):

@@ -3,18 +3,33 @@
 Version 1.0.0 | Python 3.8+ | No additional packages
 
 A general fantasy-name generator with readable syllables, optional first and
-last names, strict length validation, and duplicate tracking. The app selects a library matching the character race and sex.
-Naming controls live under Automation > Appearance; profession is selected separately.
-Gargoyle libraries use single names. The generic API without a category retains the original pools described below.
+last names, strict length validation, and duplicate tracking. The Seeder applies
+the character's appearance before reserving a fantasy name from the matching
+race and sex library. If appearance customization is disabled, it uses the
+default human male library. Naming controls live under **Automation > Appearance**.
+
+Gargoyle libraries use single-word names. These are the available single-name
+counts before accounting for used names.
+
+| Race | Male | Female |
+| --- | ---: | ---: |
+| Human | 5,479 | 3,373 |
+| Elf | 1,274 | 1,138 |
+| Gargoyle | 5,496 | 3,381 |
+
+Every pool screens invented names for common blocked fragments, including
+fragments that span the space in a first-and-last name. The Seeder applies
+this check to unsubmitted reservations before typing them. Ultima Online can
+apply additional naming rules.
 
 ## What is included
 
-- **8,951 first-name possibilities:** a curated bank plus combinations of
+- **8,917 first-name possibilities** in the generic pool: a curated bank plus combinations of
   complete, pronounceable syllables. Pronunciation is subjective; synthesized
   names are fantasy inventions, not a dictionary of verified real names.
 - **468 curated surnames:** shorter names such as Vale, Wren, and Thorne,
   plus fantasy surnames such as Moonweave, Ashbrook, and Starfall.
-- **2,900,018 distinct single or full names** that fit the default 16-character
+- **2,881,883 distinct single or full names** that fit the default 16-character
   limit, before any names are reserved. This is a count of valid combinations,
   not a claim that millions of names were hand-written individually.
 - One-word, first-and-last, or mixed output.
@@ -24,8 +39,8 @@ Gargoyle libraries use single names. The generic API without a category retains 
 - Optional JSON history to keep preventing duplicates after restarting the app.
 - Custom dictionaries and optional random seeds for repeatable previews.
 
-Example output from seed 42 includes `Taren`, `Galaya Westfall`,
-`Faema Stormsong`, `Calia Everbrook`, and `Thalarin Greyfen`.
+Example names include `Taren`, `Galaya Westfall`, `Faema Stormsong`,
+`Calia Everbrook`, and `Thalarin Greyfen`.
 
 ## Quick integration
 
