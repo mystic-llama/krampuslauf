@@ -4,8 +4,7 @@ Every character-menu Back restores the shard scrollbar to TOP (operator-tested).
 No character is ever selected; any unrecognized or dangerous screen halts.
 Only known shard suffixes from the OS window title are stored, never account names.
 """
-import time
-from cycler_engine import GameWorker, KNOWN_SHARDS, APP_DIR, selected_window
+from cycler_engine import APP_DIR, KNOWN_SHARDS, SYNC_PATIENCE_SECONDS, GameWorker, selected_window
 from shard_identity import shard_from_title
 from shard_map import save_map, load_map
 from scan_layout import row_for_index
@@ -22,6 +21,21 @@ class ShardScanner(GameWorker):
         title = selected_window(self.window_title).title
         return shard_from_title(title, KNOWN_SHARDS)
 
+    def _states_after_click(self, timeout, loading_message):
+        """Poll menu states with one bounded extension for the loading panel."""
+        deadline = self.clock() + timeout
+        saw_loading_panel = False
+        while self.clock() < deadline:
+            self.sleep(.30)
+            state = self.state()
+            if state == 'sync_error' and not saw_loading_panel:
+                # The Classic Client uses the same stone panel for loading and Origin errors.
+                saw_loading_panel = True
+                patience = float(self.cfg.get('sync_transient_seconds', SYNC_PATIENCE_SECONDS))
+                deadline = max(deadline, self.clock() + patience)
+                self.say(loading_message)
+            yield state
+
     def _select_shard(self, index, click_point):
         """Retry clicks only while selection is not known to have happened.
 
@@ -36,13 +50,16 @@ class ShardScanner(GameWorker):
             self.say('SCAN row {}: selecting shard.'.format(index+1) if attempt == 1 else
                      'SCAN row {}: retry {}/{} after no response.'.format(index+1,attempt,MAX_NAV_ATTEMPTS))
             self.click(click_point, expected='servers', settle=.35, double=True)
-            deadline = self.clock() + CLICK_WAIT_SECONDS
             seen_title = None
             stable_since = None
-            while self.clock() < deadline:
-                self.sleep(.25)
-                state = self.state()
-                if state in ('login','online_busy','sync_error'):
+            saw_loading_panel = False
+            for state in self._states_after_click(
+                    CLICK_WAIT_SECONDS, f'SCAN row {index + 1}: waiting for the character menu to load.'):
+                if state == 'sync_error':
+                    saw_loading_panel = True
+                    seen_title = None
+                    continue
+                if state in ('login', 'online_busy'):
                     raise RuntimeError('Scan encountered {} at row {}; progress saved.'.format(state,index+1))
                 name = self._visible_shard()
                 if name:
@@ -66,7 +83,9 @@ class ShardScanner(GameWorker):
                     raise RuntimeError('Unexpected {} after selecting row {}; progress saved.'.format(state,index+1))
             final = self.state()
             title = self._visible_shard()
-            if title or final != 'servers':
+            if final == 'sync_error':
+                raise RuntimeError(f'Scan timed out waiting for shard row {index + 1} to load. Progress saved.')
+            if title or final != 'servers' or saw_loading_panel:
                 # Might be entering an unrecognized menu; don't click a
                 # second time where a character slot could now be present.
                 raise RuntimeError('Shard row {} changed to screen {} / title {}; refusing duplicate click.'.format(
@@ -77,28 +96,36 @@ class ShardScanner(GameWorker):
         raise RuntimeError('Shard row {} did not respond after {} attempts. Resume from saved checkpoint.'.format(index+1,MAX_NAV_ATTEMPTS))
 
     def _back_to_top(self, shard):
-        for attempt in range(1,MAX_NAV_ATTEMPTS+1):
+        back_menus = ('characters', 'new_character')
+        for attempt in range(1, MAX_NAV_ATTEMPTS + 1):
             self.check()
-            if self.state() == 'servers':
+            state = self.state()
+            if state == 'servers':
                 return
-            title=self._visible_shard()
-            state=self.state()
-            if title != shard or state in ('login','online_busy','sync_error'):
-                raise RuntimeError('Refusing Back: unexpected screen {} or shard {}. Saved previous scan rows.'.format(state,title))
-            self.say('SCAN {}: Back attempt {}/{}.'.format(shard,attempt,MAX_NAV_ATTEMPTS))
-            self.click(self.cfg['points']['back'])
-            deadline=self.clock()+BACK_WAIT_SECONDS
-            while self.clock()<deadline:
-                self.sleep(.3)
-                state=self.state()
-                if state=='servers':
+            title = self._visible_shard()
+            if title != shard or state in ('login', 'online_busy', 'sync_error'):
+                raise RuntimeError(f'Refusing Back on screen {state} and shard {title}. Progress saved.')
+            # A title-verified empty shard may have an unrecognized creation screen.
+            # Only a positively recognized menu can authorize a second Back click.
+            if attempt > 1 and state not in back_menus:
+                break
+            self.say(f'SCAN {shard}: Back attempt {attempt}/{MAX_NAV_ATTEMPTS}.')
+            self.click(self.cfg['points']['back'], expected=state if state in back_menus else None)
+            for state in self._states_after_click(
+                    BACK_WAIT_SECONDS, f'SCAN {shard}: waiting for the shard list to reload after Back.'):
+                if state == 'servers':
                     return
-                if state in ('login','online_busy','sync_error'):
-                    raise RuntimeError('Scan Back reached {}. Progress saved.'.format(state))
-            if attempt<MAX_NAV_ATTEMPTS:
-                self.say('Back did not return to shard list; retrying safely.')
+                if state in ('login', 'online_busy'):
+                    raise RuntimeError(f'Scan Back reached {state}. Progress saved.')
+            if state == 'sync_error':
+                raise RuntimeError(f'Scan timed out waiting for the shard list after Back on {shard}. Progress saved.')
+            if state not in back_menus:
+                break
+            if attempt < MAX_NAV_ATTEMPTS:
+                self.say(f'SCAN {shard}: the character menu is still open. Checking before retrying Back.')
                 self.sleep(.7)
-        raise RuntimeError('Unable to return to shard list after {} attempts on {}. Resume after manually returning to shard list.'.format(MAX_NAV_ATTEMPTS,shard))
+        raise RuntimeError(f'Unable to return to the shard list on {shard}. Progress saved. '
+                           'Resume after manually returning to the shard list.')
 
     def scan(self,total=27,*,resume=False):
         total=int(total)

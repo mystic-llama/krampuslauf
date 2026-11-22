@@ -7,7 +7,7 @@ Actions name existing MainWindow handlers, never automation implementations.
 from account_profiles import SLOTS, NICKNAME_LIMIT
 from appearance import COLOR_ASSETS
 
-VERSION = '1.8.0-beta.4'
+VERSION = '1.8.0-beta.5'
 PROJECT_URL = 'https://github.com/mystic-llama/krampuslauf'
 PAGE_WIDTH, PAGE_HEIGHT = 676, 602
 HEADER_HEIGHT = 144
@@ -64,20 +64,21 @@ def number(caption, ref, config, x, y, low, high, default, w=204):
 LAYOUTS = {
     'setup': [
         heading('Connect Razor Enhanced', w=320),
-        check('1: In Game Options (Paperdoll)\nSet Tooltip delay to 5000 ms', 'setup_checks.tooltip_delay', None, 16, 44, 320, h=48),
+        check('1: In Game Options (Paperdoll)\nTurn off tooltips, or set delay to 5000 ms', 'setup_checks.tooltip_delay', None, 16, 44, 320, h=48),
         check('2: Razor Technical tab\nLoad the default profile', 'setup_checks.default_profile', None, 16, 98, 320, h=48),
-        check('3: Razor Scripting tab\nadd krampuslauf_bridge.py', 'setup_checks.script', None, 16, 152, 320, h=48),
+        check('3: Razor Scripting tab\nadd krampuslauf_bridge.py. AutoStart at Login', 'setup_checks.script', None, 16, 152, 320, h=48),
         button('Show bridge script', 'show_bridge_script', 16, 206, 320),
         check('4: Razor Options\nTurn on Auto-open doors', 'setup_checks.doors', None, 16, 252, 320, h=44),
         check('5: Razor Technical tab\nTurn on Remember passwords', 'setup_checks.passwords', None, 16, 302, 320, h=44),
-        text('', 352, w=320, h=44, role='muted', ref='admin_indicator'),
         item('image', 'Krampuslauf', 352, 8, 308, 250, asset='logo.png', ref='setup_art'),
         heading('Setup progress', 268, 352, 308),
-        text('', 300, 352, 308, 168, role='muted', ref='setup_progress'),
+        text('', 300, 352, 308, 160, role='muted', ref='setup_progress'),
+        button('Go: Profiles', 'page:profiles', 16, 424, 100),
+        button('Go: Game', 'page:client', 120, 424, 100),
+        button('Go: Shards', 'page:shards', 224, 424, 100),
         rule(478),
-        button('Save checklist', 'save_setup_checklist', 16, 492, 204, tone='accent'),
-        button('Restart as administrator', 'restart_as_admin', 232, 492, 212),
-        button('Prepare profiles \u2192', 'page:profiles', 456, 492, 204),
+        button('Save checklist', 'save_setup_checklist', 16, 492, 320, tone='accent'),
+        button('Prepare profiles \u2192', 'page:profiles', 348, 492, 312),
     ],
     'profiles': [
         heading('Temporary profile isolation'),
@@ -128,8 +129,8 @@ LAYOUTS = {
         text('Scan: identify shards from the title.\nLearn: read names straight off the list.', 330, 344, 316, 40, 'muted'),
         *number('Shard row spacing (px)', 'row_spacing', 'row_spacing', 16, 382, 5, 150, 25),
         *number('Max UP reset clicks', 'scroll_reset_clicks', 'scroll_reset_clicks', 236, 382, 0, 40, 18),
-        check('Fast verified return', 'fast_last_shard', 'fast_last_shard', 456, 378, 204),
-        text('Last RE-confirmed shard.\nNine visible rows are fixed.', 412, 456, 204, 40, 'muted'),
+        text('Characters 2–7 use the last-shard button.\nThe list is for a shard\'s first entry.',
+             378, 456, 204, 80, 'muted'),
         button('Next: Automation \u2192', 'page:gift', 16, 464),
         button('Save navigation options', 'save_settings_click', 456, 464, tone='accent'),
     ],

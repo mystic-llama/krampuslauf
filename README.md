@@ -6,7 +6,7 @@
 
 Krampuslauf is a Windows app for seasonal gift runs in the official Ultima Online Classic Client with Razor Enhanced. **Character Seeder** creates characters in open slots across your selected shards. **Gift Cycler** logs existing characters in and out so eligible characters can receive their holiday gifts. Built by Mystic Llama.
 
-**Public beta · 1.8.0-beta.4**
+**Public beta · 1.8.0-beta.5**
 
 [Configuration guide](CONFIGURATION.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/mystic-llama/krampuslauf/issues)
 
@@ -51,7 +51,7 @@ Ultima Online’s Krampus boss is a separate seasonal encounter. Krampuslauf han
 
 ## Download for Windows
 
-Download `Krampuslauf_1.8.0-beta.4_Windows_x64.zip` from the [beta release](https://github.com/mystic-llama/krampuslauf/releases/tag/v1.8.0-beta.4). Extract the entire ZIP, open `Krampuslauf.exe`, and follow the [configuration guide](CONFIGURATION.md) to set up Razor Enhanced and the Classic Client. The Windows build includes its Python runtime.
+Download `Krampuslauf_1.8.0-beta.5_Windows_x64.zip` from the [beta release](https://github.com/mystic-llama/krampuslauf/releases/tag/v1.8.0-beta.5). Extract the entire ZIP, open `Krampuslauf.exe`, and follow the [configuration guide](CONFIGURATION.md) to set up Razor Enhanced and the Classic Client. The Windows build includes its Python runtime.
 
 ## Run the source
 
@@ -65,7 +65,7 @@ The batch file uses the `py -3` launcher when it is available, then `python` on 
 
 ## First-time setup
 
-1. **Setup > Checklist:** use Razor's existing **default** profile. Click **Show bridge script**, add that file in Scripting, and enable **AutoStart at Login**. Do not run the file with desktop Python. Enable **Automatically Open Doors** and **Remember passwords**. Launch the game through Razor. Krampuslauf shows whether it is running as administrator; use **Restart as administrator** so it matches Razor. If Razor has been set to start without administrator rights, leave Krampuslauf unelevated too. **In Game Options (Paperdoll), set Tooltip delay to 5000 ms.** Check all five boxes, then **Save checklist**. The page lists the remaining setup steps in order.
+1. **Setup > Checklist:** use Razor's existing **default** profile. Click **Show bridge script**, add that file in Scripting, and enable **AutoStart at Login**. Do not run the file with desktop Python. Enable **Automatically Open Doors** and **Remember passwords**. Launch the game through Razor. **In Game Options (Paperdoll), turn off tooltips or set Tooltip delay to 5000 ms.** Check all five boxes, then **Save checklist**. The page lists the remaining setup steps in order.
 2. **Setup > Profiles:** close Razor and Classic Client. Choose the folder containing `Profiles` and `Backup`, validate it and prepare Krampuslauf. This temporarily unlinks characters in the two `RazorEnhanced.NewProfiles` files while preserving profile names and original backups. Restart Razor, then launch the game through it.
 3. **Game client:** select the game window. With the client on any game menu, click **Check current screen** to confirm the menu is recognized. No calibration is needed: menu markers and click positions are built in for the Classic Client's 640 × 480 menus, and Windows display scaling is detected automatically.
 4. **Shards:** check row spacing and scan from the top of the shard list. Verify the order; rescan after a Windows time-zone change.
@@ -75,12 +75,6 @@ The batch file uses the `py -3` launcher when it is available, then `python` on 
 For creation, in **Automation > Character Seeder**, select **Main Account** or **Account 2–15** (five rows of three) then choose naming options under **Automation > Appearance**. That selected account is also used for combined Gift Cycler + Seeder runs. Optionally choose sex, race, styles and skin tones together with profession under **Automation > Appearance**, in Fixed or Random mode. Skin-palette cell centres are built in for all three races; no first-run skin calibration is required. Use **Setup > Game Client > Click points** only to override a missed click.
 
 The optional Account Nickname is capped at 16 characters and changes the displayed radio-button name, never the internal history identity or generated names. Convention names look like `Llama CAT b`; fantasy names are saved before typing and reused after a halt. See [the naming reference](docs/FANTASY_NAMES.md).
-
-## Running Razor without an administrator prompt
-
-Krampuslauf needs the same permissions as Razor Enhanced. When Razor is set to require administrator rights, use **Restart as administrator** on the checklist.
-
-The CUO Handshake Fix Patcher can remove that requirement from Razor. Close Razor Enhanced and the game, open the patcher, select the Razor Enhanced folder, check **Remove admin requirement (Winlator / asInvoker)**, and click **Apply Patch**. The patcher changes the manifest inside `RazorEnhanced.exe` from `requireAdministrator` to `asInvoker` and shows **No admin** when that change is present. Razor then starts with the permissions of whatever launched it, so Krampuslauf does not need to run as administrator either. **Restore Backup** puts the original executable back, including its previous elevation setting. The same patcher can also install its ClassicUO handshake fix; that fix is separate from this administrator option.
 
 ## During and after a run
 

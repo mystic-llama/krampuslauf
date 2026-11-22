@@ -54,7 +54,7 @@ def explain_error(error):
     if 'mouse target' in text or 'sendinput' in text:
         return advise('Check mouse access to the game',
                       'Restore the Classic Client window and keep it fully on screen. '
-                      'Launch the game through Razor and run Krampuslauf as administrator to match Razor. '
+                      'Launch the game through Razor. '
                       'Use Help / Status > Diagnostics to compare Game cursor and Desktop cursor.', 'diagnostics')
     if 'no unfinished' in text or 'no pending' in text:
         return advise('No recovery record was found',
@@ -108,10 +108,6 @@ def explain_error(error):
         return advise('Finish the setup checklist',
                       'Open Setup > Checklist. Complete the Razor and game settings, check EVERY box, '
                       'then click Save checklist. The checkmarks are required before a run can start.', 'setup')
-    if 'administrator' in text or 'elevat' in text:
-        return advise('Administrator access is needed',
-                      'Open Setup > Checklist and click Restart as administrator. '
-                      'Krampuslauf must match Razor’s administrator elevation. Launch the game through Razor.', 'setup')
     if any(t in text for t in ('exactly one', 'one game client per', 'close extra official')) and ('client' in text or 'window' in text):
         return advise('Keep one Classic Client open',
                       'Close extra Classic Client windows. Open Game client, '

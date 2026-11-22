@@ -45,7 +45,7 @@ from System.Windows.Forms import (
 )
 
 from bridge_protocol import BridgeSession, BridgeCancelled
-from setup_checklist import SETUP_STEPS, checklist_from, setup_missing, is_administrator, restart_elevated
+from setup_checklist import SETUP_STEPS, checklist_from, setup_missing
 from razor_paths import find_razor_roots
 from profile_isolation import (IsolationError, session_status,
                                normalize_root, prepare as prepare_re_profiles,
@@ -1061,7 +1061,6 @@ class MainWindow(Form):
             'Version: ' + VERSION,
             'Data folder: %LOCALAPPDATA%\\Krampuslauf',
             'Setup checklist: {}/{} confirmed'.format(checks, len(SETUP_STEPS)),
-            'Permissions: ' + ('Administrator' if is_administrator() else 'Not elevated'),
             'Classic Client: ' + ('Selected for this launch' if self.cfg.get('window_title') else 'Not selected'),
             'Profile isolation: ' + str(state.get('status', 'Unknown')),
             'Click points: built-in 640×480 layout, {} recorded'.format(len(self.cfg.get('point_overrides', {}))),
@@ -1098,9 +1097,6 @@ class MainWindow(Form):
 
 
     def update_setup_state(self):
-        if hasattr(self, 'admin_indicator'):
-            self.admin_indicator.Text = ('Krampuslauf is running as administrator, matching Razor.' if is_administrator()
-                                         else 'Not running as administrator. Click Restart as administrator.')
         self.update_setup_progress()
 
     def offer_razor_root(self):
@@ -1137,12 +1133,11 @@ class MainWindow(Form):
         verified = 'VERIFIED' in map_status(MAP_FILE, self.cfg)
         steps = (
             (not setup_missing(self.cfg), 'Checklist saved', 'Check every box, then Save checklist.'),
-            (is_administrator(), 'Running as administrator', 'Click Restart as administrator.'),
             (isolated, 'Profiles isolated', 'Close Razor and the client, then Prepare profiles.'),
-            (bool(self.cfg.get('window_title')), 'Game window selected', 'Open Game Client and select the client.'),
-            (bool(getattr(self, 'screen_recognized', False)), 'Current screen recognized', 'On Game Client, click Check current screen.'),
-            (verified, 'Shard list verified', 'On Shards, click Scan / resume.'),
-            (bool(self.cfg.get('manual_test_passes', {}).get('bridge')), 'Bridge tested', 'Log in, then Diagnostics, RE bridge. Log out before a run.'),
+            (bool(self.cfg.get('window_title')), 'Game window selected', 'Go: Game, then select the client.'),
+            (bool(getattr(self, 'screen_recognized', False)), 'Current screen recognized', 'Go: Game, then Check current screen.'),
+            (verified, 'Shard list verified', 'Go: Shards, then Scan / resume.'),
+            (bool(self.cfg.get('manual_test_passes', {}).get('bridge')), 'Bridge tested', 'Diagnostics, then RE bridge.'),
         )
         pending = next((hint for ready, _label, hint in steps if not ready), 'Test one shard on Gift Cycler.')
         lines = ['OK   ' + label if ready else 'NO   ' + label for ready, label, _hint in steps]
@@ -1245,7 +1240,7 @@ class MainWindow(Form):
             self.update_isolation_state()
         self.log_line('Profile isolation prepared: {} names kept, {} old character links cleared.'.format(
             result['profiles'], result['links']))
-        window_message('Profiles prepared.\n\nNEXT: Start Razor as administrator with the default profile selected, '
+        window_message('Profiles prepared.\n\nNEXT: Start Razor with the default profile selected, '
                        'then launch the game through Razor. '
                        'Open Game client and select the game window.\n\n'
                        'When finished, close both programs and use Setup > Profiles > Restore original profiles.')
@@ -1280,22 +1275,6 @@ class MainWindow(Form):
         self.log_line(result['status'])
         window_message(result['status'] + '\n\nStart Razor Enhanced to confirm your original profile links.')
 
-    def restart_as_admin(self, sender, args):
-        if self.busy():
-            raise RuntimeError('Stop the current run before restarting the application.')
-        self.save_settings()
-        if is_administrator():
-            window_message('Krampuslauf is already running as Administrator.')
-            return
-        if MessageBox.Show('Windows will ask permission to restart Krampuslauf as Administrator.\n'
-                           'No credentials are requested or read by Krampuslauf. Continue?',
-                           'Elevate Krampuslauf', MessageBoxButtons.YesNo,
-                           MessageBoxIcon.Warning) != DialogResult.Yes:
-            return
-        if restart_elevated():
-            self.ui_timer.Stop()
-            Application.Exit()
-
     def require_setup(self):
         self.cfg['setup_checklist'] = {k: bool(v.Checked) for k, v in self.setup_checks.items()}
         missing = setup_missing(self.cfg)
@@ -1307,10 +1286,6 @@ class MainWindow(Form):
         if not state['active'] or state.get('states') != ['temporary', 'temporary']:
             self.show_page('profiles')
             raise RuntimeError('Prepare Krampuslauf on Setup > Profiles first. Close Razor Enhanced and Classic Client, then click Prepare Krampuslauf.')
-        if not is_administrator():
-            self.show_page('setup')
-            raise RuntimeError('Run Krampuslauf as Administrator to match Razor’s elevation. '
-                               'Launch the game through Razor. Use Setup > Checklist > Restart as administrator.')
 
     def build_home(self):
         self.mount_page('gift')
@@ -1480,7 +1455,8 @@ class MainWindow(Form):
             self.gift_wait.Value = Decimal.Parse(str(self.cfg.get('gift_wait',5)))
             self.post_logout.Value = Decimal.Parse(str(self.cfg.get('post_logout_seconds',7)))
             self.online_cooldown.Value = Decimal.Parse(str(self.cfg.get('online_cooldown_seconds',305)))
-            self.fast_last_shard.Checked = bool(self.cfg.get('fast_last_shard',False))
+            if hasattr(self, 'fast_last_shard'):
+                self.fast_last_shard.Checked = bool(self.cfg.get('fast_last_shard', False))
             self.slots_field.Text = self.format_slot_rules(self.cfg.get('skip_slots',{}))
             self.cycle_status_label.Text = 'Cycle: ' + str(self.cfg.get('gift_cycle_id',''))[:8]
             self.load_appearance_controls()
@@ -2402,12 +2378,9 @@ class MainWindow(Form):
             return
         prompt = (
             "Open the SHARD LIST after you have already visited a shard.\n\n"
-            "This test will press Enter ONE time while the shard list is visible, "
-            "then wait for Character Selection. It NEVER presses Enter on "
-            "the character screen and will NOT log into a character.\n\n"
-            "The app cannot verify the shard NAME until a character logs in "
-            "and the Razor bridge reports it. Confirm the remembered shard "
-            "manually before enabling Fast Return under Shards.\n\nContinue?"
+            "This test clicks the last-shard button once, then waits for "
+            "Character Selection. It does not press Enter and will NOT log "
+            "into a character.\n\nContinue?"
         )
         if MessageBox.Show(prompt, "Test remembered-shard shortcut",
                            MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes:
@@ -2419,17 +2392,16 @@ class MainWindow(Form):
                                 self.stop_event, self.emit, self.pause_event)
             self.emit("LAST-SHARD TEST: checking that the game is on the shard-selection screen.")
             if worker.state() != "servers":
-                raise RuntimeError("Last-shard test requires the detected shard-selection screen. Nothing was pressed.")
-            worker.press("enter")
-            self.emit("LAST-SHARD TEST: sent Enter once on shard list; waiting for character menu.")
+                raise RuntimeError("Last-shard test requires the detected shard-selection screen. Nothing was clicked.")
+            worker.click(worker.cfg["points"]["last_shard"], expected="servers")
+            self.emit("LAST-SHARD TEST: clicked the last-shard button once; waiting for character menu.")
             deadline = worker.clock() + 6.0
             last = "unknown"
             while worker.clock() < deadline:
                 worker.sleep(.3)
                 last = worker.state()
                 if last == "characters":
-                    self.emit("LAST-SHARD TEST PASSED: character menu detected. No character was entered."
-                              " Manually confirm the shard and enable Fast Return under Shards.")
+                    self.emit("LAST-SHARD TEST PASSED: character menu detected. No character was entered.")
                     self.mark_test_pass('last_shard')
                     return
                 if last == "login":

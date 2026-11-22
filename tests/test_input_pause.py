@@ -202,7 +202,6 @@ def test_pause_time_does_not_consume_navigation_or_wait_deadline():
     ns = dict(time=SimpleNamespace(monotonic=lambda: clock.value, sleep=sleep),
               Cancelled=RuntimeError)
     w = methods('cycler_engine.py', 'GameWorker', ['clock', 'check', 'sleep'], ns)()
-    w.park_if_idle = lambda: None
     w.pause = threading.Event()
     w.pause.set()
     def wait(seconds):
@@ -271,54 +270,6 @@ def test_input_no_longer_kicks_the_cursor_afterwards(kind):
     assert events == [('button-up' if kind == 'click' else 'key-up')]
 
 
-def idle_worker(idle_at, *, paused=False, area=None, config=None):
-    from client_geometry import GameArea
-    moved = []
-    ns = dict(native_mouse=SimpleNamespace(idle_pointer=lambda seconds: idle_at(seconds),
-                                           move_cursor=lambda *a, **kw: moved.append((a, kw))),
-              PARK_POINT=(620, 20), PARK_IDLE_SECONDS=4.0)
-    target = methods('cycler_engine.py', 'GameWorker', ['park_if_idle'], ns)()
-    target.cfg = config or {}
-    target.pause = SimpleNamespace(is_set=lambda: paused)
-    target.game_area = lambda: area or GameArea(100, 200, 640, 480)
-    return target, moved
-
-
-def test_pointer_resting_for_four_seconds_is_moved_off_the_control():
-    asked = []
-    target, moved = idle_worker(lambda s: asked.append(s) or (400, 500))
-    target.park_if_idle()
-    assert asked == [4.0] and moved == [((720, 220), {'settle': .01})]
-
-
-def test_pointer_is_left_alone_when_it_has_not_rested_or_was_moved_by_the_user():
-    target, moved = idle_worker(lambda s: None)
-    target.park_if_idle()
-    assert moved == []
-
-
-def test_pointer_already_in_the_dead_zone_is_not_moved_again():
-    target, moved = idle_worker(lambda s: (721, 219))
-    target.park_if_idle()
-    assert moved == []
-
-
-def test_idle_kick_is_skipped_while_paused_in_world_view_or_when_disabled():
-    from client_geometry import GameArea
-    for kwargs in (dict(paused=True), dict(area=GameArea(0, 0, 1280, 720)),
-                   dict(config={'park_idle_seconds': 0})):
-        target, moved = idle_worker(lambda s: (400, 500), **kwargs)
-        target.park_if_idle()
-        assert moved == []
-
-
-def test_idle_kick_failures_never_interrupt_a_wait():
-    def boom(seconds): raise OSError('no cursor')
-    target, moved = idle_worker(boom)
-    target.park_if_idle()
-    assert moved == []
-
-
 def test_idle_pointer_reports_only_a_pointer_still_where_it_was_placed(monkeypatch):
     now = [100.0]
     monkeypatch.setattr(native_mouse.time, 'monotonic', lambda: now[0])
@@ -341,21 +292,6 @@ def test_incomplete_click_does_not_park_cursor():
     target.park_menu_cursor = lambda: parked.append(True)
     target.click([10, 20])
     assert not parked
-
-
-def test_cursor_parks_in_scaled_blank_menu_artwork_without_clicking():
-    from client_geometry import GameArea
-    moved = []
-    target = methods('cycler_engine.py', 'GameWorker', ['park_menu_cursor'],
-                     dict(native_mouse=SimpleNamespace(move_cursor=lambda *a, **kw: moved.append((a,kw))),
-                          PARK_POINT=(620, 20)))()
-    target.check = lambda: None
-    target.game_area = lambda: GameArea(100, 200, 800, 600)
-    target.park_menu_cursor()
-    assert moved == [((875, 225), {'settle': .01})]
-    target.game_area = lambda: GameArea(100, 200, 1280, 720)
-    target.park_menu_cursor()
-    assert len(moved) == 1
 
 
 def test_scroll_burst_positions_once_and_stops_after_partial_interruption(monkeypatch):

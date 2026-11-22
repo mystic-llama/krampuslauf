@@ -69,7 +69,7 @@ The application-level `.gitignore` applies within its folder. It excludes privat
 
 This package contains source. A Windows executable has not been built or live-tested in this review environment.
 
-1. Use a clean source folder and Python 3.12 or newer on Windows. Run `Build_Windows_EXE.bat` as your normal user. Building/installing dependencies does not require the app's administrator mode.
+1. Use a clean source folder and Python 3.12 or newer on Windows. Run `Build_Windows_EXE.bat`.
 2. The batch file installs dependencies and PyInstaller, then creates `dist\Krampuslauf\Krampuslauf.exe`.
 3. Launch the EXE from that distribution folder. Confirm all three main tabs, the 350 × 350 Setup logo, the Help artwork, readable notices and the included configuration guide.
 4. Back up real app data privately, then validate preparation/restoration of Razor profiles, bridge connection/logout and one existing-character gift run. Test Pause/Resume/Stop before any real character creation. Check Windows scaling at the settings you intend to support.

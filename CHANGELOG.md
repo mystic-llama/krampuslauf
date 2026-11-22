@@ -1,6 +1,9 @@
-# Unreleased
+# 1.8.0-beta.5
 
-- Setup shows the remaining steps in order, detects administrator mode, opens the bridge script in Explorer, and fills a Razor data folder when only one is found.
+- The pointer is no longer moved to a corner at any point. Checklist item 1 asks for tooltips off or a 5000 ms delay, and item 3 includes AutoStart at Login.
+- Characters 2–7 on the last shard click the last-shard button at game-area (192, 429). The shard list is used only the first time a shard is entered.
+- Setup progress can jump to Profiles, Game Client, and Shards. Setup no longer shows an administrator status.
+- Setup shows the remaining steps in order, opens the bridge script in Explorer, and fills a Razor data folder when only one is found.
 - Saved data now lives in `%LOCALAPPDATA%\Krampuslauf`. The first launch moves an older data folder when the new one is not already there.
 - Help explains why donations matter, shows the PayPal donate button, and gives Discord @mystikllama for in-game gold.
 - Point project and support links at https://github.com/mystic-llama/krampuslauf.
@@ -16,7 +19,7 @@
 
 - Rename the application, executable, documentation and title to Krampuslauf; preserve existing data identities and bridge compatibility.
 - Expand account selection to 15 accounts in five rows of three, with optional nicknames capped at 16 characters. Existing accounts retain their nicknames, settings and progress.
-- Add the required IMPORTANT checklist item for a 5000 ms tooltip delay in GAME options. Clarify matching Razor's administrator elevation, launching the game through Razor, and checking every box before proceeding. Render both lines of checklist captions.
+- Add the required checklist item for tooltips off or a 5000 ms delay in Game Options. Checking every box is required before proceeding. Render both lines of checklist captions.
 - **No more menu calibration.** The Classic Client draws its login, shard, character and creation menus in a fixed 640 × 480 game area. Click positions and screen markers are now built in (`menu_layout.py`, `assets/screen_markers/`), measured from the game area instead of the outer window corner, so title-bar height, borders and Windows theme no longer affect them.
 - Windows display scaling is detected from the game-area size (for example 800 × 600 at 125%) and applied to clicks and marker images automatically. A non-4:3 or in-world view is reported as unknown and never clicked.
 - Removed Calibration > Client & menus markers/points, Calibration > Creation, Calibration > Warnings and Calibration > World entry. The Calibration tab is now **Game client**: select the window and use **Check current screen**, a read-only report of game-area size, scaling and the recognized menu.
@@ -83,7 +86,7 @@ Consolidates the supplied 1.7.6 source and 1.8.0-preview.1 interface work.
 - Combined creation requires an explicitly loaded/saved local history. Pending characters stay protected across cycles.
 - A confirmed-absent attempt retried in a later cycle receives the new cycle tag.
 - Invalid slot ranges produce clear correction instructions without allocating excessive ranges.
-- Corrected the Windows administrator-restart function signature.
+- Corrected the Windows restart function signature.
 
 ## Source distribution
 

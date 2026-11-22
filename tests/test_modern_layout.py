@@ -242,21 +242,6 @@ def test_editable_art_beside_exe_takes_priority_and_missing_art_is_optional(tmp_
     assert artwork_path(**args) == exe/'assets'/'logo.png'
 
 
-def test_admin_restart_signature_accepts_all_six_arguments(monkeypatch):
-    import ctypes
-    from ctypes import wintypes
-    import setup_checklist
-    calls = []
-    prototype = ctypes.CFUNCTYPE(ctypes.c_void_p, wintypes.HWND, wintypes.LPCWSTR,
-                                wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.LPCWSTR, ctypes.c_int)
-    callback = prototype(lambda *args: calls.append(args) or 33)
-    monkeypatch.setattr(ctypes, 'windll', SimpleNamespace(shell32=SimpleNamespace(ShellExecuteW=callback)), raising=False)
-    # Patch only this function's os namespace; pathlib must still use POSIX here.
-    monkeypatch.setattr(setup_checklist, 'os', SimpleNamespace(name='nt'))
-    assert setup_checklist.restart_elevated() is True
-    assert calls[0][1] == 'runas' and len(calls[0]) == 6
-
-
 @pytest.mark.parametrize('compact', [False, True])
 def test_all_jobs_expose_pause_stop_while_only_runs_hide_main(compact):
     class InlineThread:

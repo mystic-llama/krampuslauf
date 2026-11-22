@@ -1,10 +1,16 @@
-# Krampuslauf 1.8.0-beta.4
+# Krampuslauf 1.8.0-beta.5
 
 A Windows beta for seasonal gift runs in the official Ultima Online Classic Client with Razor Enhanced. Character Seeder fills available character slots on selected shards and Gift Cycler logs existing characters in and out for eligible holiday rewards.
 
+## What's new since 1.8.0-beta.4
+
+- Characters 2–7 on a shard that was already entered click the last-shard button. The built-in game-area point is (192, 429). The shard list is used the first time a shard is entered.
+- The pointer is no longer moved to a corner.
+- Setup progress can open Profiles, Game Client, and Shards. The checklist no longer shows an administrator status.
+
 ## Install
 
-Download `Krampuslauf_1.8.0-beta.4_Windows_x64.zip`, extract the entire archive, and open `Krampuslauf.exe`. The build includes its Python runtime. Keep the extracted folder together and follow the [configuration guide](../CONFIGURATION.md) to set up Razor Enhanced and the Classic Client. Start with one shard and one existing character before enabling character creation.
+Download `Krampuslauf_1.8.0-beta.5_Windows_x64.zip`, extract the entire archive, and open `Krampuslauf.exe`. The build includes its Python runtime. Keep the extracted folder together and follow the [configuration guide](../CONFIGURATION.md) to set up Razor Enhanced and the Classic Client. Start with one shard and one existing character before enabling character creation.
 
 If you prefer to run from source, use either of the source archives generated for this release. See [Run the source](../README.md#run-the-source) for prerequisites and setup.
 

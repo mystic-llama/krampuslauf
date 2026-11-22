@@ -57,7 +57,7 @@ TIMING_FLAG = APP_DIR / "timing.enabled"
 TIMING_LOG = APP_DIR / "timing.log"
 TIMED_METHODS = (
     "state", "marker_scores", "seed_visible", "input_context", "pointer_action", "click", "press",
-    "sleep", "park_menu_cursor", "park_if_idle", "title_identity_check", "scroll_shard_arrow",
+    "sleep", "title_identity_check", "scroll_shard_arrow",
     "read_shard_rows", "wheel_shard_list", "recognized_shard_row_point", "scroll_to_shard",
     "reach_characters", "enter_slot", "bridge_status", "wait_gift", "logout",
     "seed_wait_marker", "seed_new_available", "apply_appearance", "seed_one", "seed_from_empty",
@@ -119,10 +119,6 @@ SHARD_WHEEL_POINT = (300, 220)
 SHARD_WHEEL_GAP = .06
 SHARD_RESET_EVENTS = 24
 MAX_LIST_STEPS = 14
-# Blank artwork in the top-right of every menu; the pointer rests here when idle.
-PARK_POINT = (620, 20)
-# A pointer resting this long on a control may bring up a tooltip over a marker.
-PARK_IDLE_SECONDS = 4.0
 # Minimum match of the hair/facial colour palette picture against the screen.
 PALETTE_MATCH = .75
 # ...and the largest median colour difference (0-255) allowed at the matched spot.
@@ -458,14 +454,12 @@ class GameWorker:
         """Top-left corner, in 640 x 480 coordinates, of the opened hair/facial colour palette.
 
         The palette's position depends on which swatch opened it, so it is
-        found by its picture instead of by a recorded point. The pointer is
-        moved off first because the game draws its cursor into the frame.
+        found by its picture instead of by a recorded point.
         """
         area = self.game_area()
         scale = area.require_scale()
         template = self.color_palette_template(scale, race, part)
         bbox = area.region_to_screen((0, 0, 640, 480))
-        self.park_menu_cursor()
         deadline = self.clock() + float(timeout)
         while True:
             self.check()
@@ -603,7 +597,6 @@ class GameWorker:
         end = self.clock() + seconds
         while self.clock() < end:
             self.check()
-            self.park_if_idle()
             time.sleep(min(.12, max(.01, end - self.clock())))
 
     def say(self, msg):
@@ -711,38 +704,6 @@ class GameWorker:
         self.check()
         focus_game(self.window_title)
         pg.press(key)
-
-    def park_menu_cursor(self):
-        """Move the pointer off any control, without clicking or a menu delay."""
-        self.check()
-        area = self.game_area()
-        if area.scale is None:
-            return  # Do not reposition the pointer in a non-menu world view.
-        # Blank top-right menu artwork, away from arrows, fields and popup lists.
-        native_mouse.move_cursor(*area.to_screen(*PARK_POINT), settle=.01)
-
-    def park_if_idle(self):
-        """Move the pointer off a control it has rested on for several seconds.
-
-        The game shows a tooltip once the pointer has rested on a control long
-        enough, and a tooltip covering a screen marker makes the screen look
-        unknown. Only a pointer still where this program left it is moved.
-        """
-        seconds = float(self.cfg.get("park_idle_seconds", PARK_IDLE_SECONDS))
-        if seconds <= 0 or self.pause.is_set():
-            return
-        try:
-            here = native_mouse.idle_pointer(seconds)
-            if here is None:
-                return
-            area = self.game_area()
-            if area.scale is None:
-                return
-            spot = area.to_screen(*PARK_POINT)
-            if abs(here[0] - spot[0]) > 3 or abs(here[1] - spot[1]) > 3:
-                native_mouse.move_cursor(*spot, settle=.01)
-        except (RuntimeError, OSError):
-            pass
 
     def state(self):
         """Recognize the menu screen from the built-in marker regions.
@@ -858,8 +819,7 @@ class GameWorker:
         return shard_rows.normalise(gray, scale)
 
     def read_shard_rows(self, settle=.3):
-        """(names per visible row, image). The pointer is parked first so no hover colours the rows."""
-        self.park_menu_cursor()
+        """(names per visible row, image)."""
         self.sleep(settle)
         gray = self.capture_shard_rows()
         return shard_rows.identify_rows(gray, self.shard_templates()), gray
@@ -886,7 +846,6 @@ class GameWorker:
             self.emit("POINTER_PAUSED|Mouse moved while scrolling the shard list. "
                       "Leave the game screen unchanged. Click Resume, or press Escape to stop.")
             self.check()
-        self.park_menu_cursor()
 
     def row_point(self, row):
         first = self.cfg["points"]["first_row"]
@@ -919,7 +878,6 @@ class GameWorker:
     def shard_row_strip(self, row):
         """Picture of one visible row's name, or None if it cannot be read right now."""
         try:
-            self.park_menu_cursor()
             self.sleep(.2)
             return shard_rows.split_rows(self.capture_shard_rows())[row]
         except (RuntimeError, OSError):
@@ -1113,40 +1071,38 @@ class GameWorker:
             self.cfg['shards'][index]))
 
     def select_last_shard_shortcut(self, index):
-        """Return to the last RE-confirmed shard without scrolling the list.
+        """Re-enter the last RE-confirmed shard from its button. No Enter key.
 
-        Enter is permitted ONLY on the recognized shard-selection screen.
-        Never press Enter after a shard mouse click or while on the character
-        list, because that can immediately enter the selected character.
+        The shard list is used the first time a shard is entered. Characters
+        2 through 7 on that same shard click the last-shard button instead.
+        Enter is never sent here: on the character list it would log in.
         """
         shard = self.cfg["shards"][index]
-        if not self.cfg.get("fast_last_shard", False):
-            return False
         if self.last_verified_shard != shard or shard in self.fast_shortcut_failed:
             return False
         if self.state() != "servers":
             raise RuntimeError("Fast last-shard shortcut refused: not on shard list.")
+        point = self.cfg.get("points", {}).get("last_shard")
+        if not (isinstance(point, (list, tuple)) and len(point) == 2):
+            raise RuntimeError("Built-in last-shard button position is missing; reinstall the application.")
 
-        self.say("FAST RETURN: last RE-verified shard is {}. Sending Enter on shard list ONLY.".format(shard))
-        self.press("enter")
+        self.say("FAST RETURN: clicking the last-shard button for {}.".format(shard))
+        self.click(point, expected="servers")
         deadline = self.clock() + 6.0
         while self.clock() < deadline:
             self.sleep(.25)
             current = self.state()
             if current == "characters":
-                # Provisional until another RE in-world shard verification.
                 self.title_identity_check(shard)
                 self.selected_index = index
-                self.say("FAST RETURN: character menu reached, no character key sent. Shard will be verified by RE.")
+                self.say("FAST RETURN: character menu reached. No character was entered.")
                 return True
             if current == "login":
                 raise RuntimeError("Fast last-shard shortcut returned to login unexpectedly; stopped safely.")
         current = self.state()
         if current == "servers":
-            # Enter may not activate the last-shard shortcut in some clients;
-            # fall back to the old explicit shard selection just this once.
             self.fast_shortcut_failed.add(shard)
-            self.say("FAST RETURN: Enter did not leave shard list. Falling back to shard-list scrolling.")
+            self.say("FAST RETURN: the last-shard button did not leave the shard list. Using the shard list.")
             return False
         raise RuntimeError("Fast last-shard shortcut produced an unrecognized screen; refusing further clicks.")
 

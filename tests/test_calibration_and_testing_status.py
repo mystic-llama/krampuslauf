@@ -45,6 +45,6 @@ class CalibrationStatusTests(unittest.TestCase):
     def test_setup_requires_re_elevation_confirmation(self):
         steps=dict(setup_checklist.SETUP_STEPS)
         self.assertNotIn('restart_admin', steps)
-        self.assertIn('not is_administrator()', ast.get_source_segment(SOURCE, method('require_setup')))
+        self.assertNotIn('is_administrator', ast.get_source_segment(SOURCE, method('require_setup')))
 
 if __name__=='__main__': unittest.main()

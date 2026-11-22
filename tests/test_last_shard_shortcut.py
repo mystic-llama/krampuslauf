@@ -13,12 +13,12 @@ def calls(node):
     return [x.func.attr for x in ast.walk(node) if isinstance(x, ast.Call) and isinstance(x.func, ast.Attribute)]
 
 class LastShardTests(unittest.TestCase):
-    def test_fast_shortcut_uses_state_and_only_one_enter(self):
+    def test_fast_shortcut_clicks_the_last_shard_button_and_sends_no_enter(self):
         code = method("cycler_engine.py", "GameWorker", "select_last_shard_shortcut")
         self.assertIn("state", calls(code))
-        self.assertIn("press", calls(code))
-        self.assertNotIn("click", calls(code))
-        self.assertEqual(len([x for x in ast.walk(code) if isinstance(x, ast.Constant) and x.value=="enter"]),1)
+        self.assertIn("click", calls(code))
+        self.assertNotIn("press", calls(code))
+        self.assertNotIn("enter", [x.value for x in ast.walk(code) if isinstance(x, ast.Constant)])
     def test_first_visit_still_requires_explicit_selection(self):
         code = (ROOT / "cycler_engine.py").read_text(encoding="utf-8")
         self.assertIn('self.last_verified_shard = None', code)
@@ -28,7 +28,8 @@ class LastShardTests(unittest.TestCase):
         code = method("Krampuslauf.py", "MainWindow", "test_last_shard")
         self.assertNotIn("enter_slot", calls(code))
         self.assertIn("state", calls(code))
-        self.assertNotIn("click", calls(code))
+        self.assertIn("click", calls(code))
+        self.assertNotIn("press", calls(code))
     def test_explicit_shard_click_still_no_enter(self):
         code = method("cycler_engine.py", "GameWorker", "scroll_to_shard")
         self.assertNotIn("press", calls(code))

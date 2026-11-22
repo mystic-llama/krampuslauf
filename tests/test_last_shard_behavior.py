@@ -19,14 +19,18 @@ class FakeWorker:
         self.fast_shortcut_failed = set()
         self._states = iter(states)
         self.pressed = []
+        self.clicked = []
         self.logs = []
         self.selected_index = None
+        self.cfg.setdefault('points', {})['last_shard'] = [200, 460]
     def clock(self):
         return time.monotonic()
     def state(self):
         return next(self._states, 'characters')
     def press(self, key):
         self.pressed.append(key)
+    def click(self, point, expected=None):
+        self.clicked.append((point, expected))
     def sleep(self, seconds):
         pass
     def say(self, text):
@@ -38,33 +42,39 @@ class FakeWorker:
 class FastReturnBehavior(unittest.TestCase):
     def config(self, enabled=True):
         return {'shards': ['Legends', 'Atlantic'], 'fast_last_shard': enabled}
-    def test_disabled(self):
-        w = FakeWorker(self.config(False), 'Atlantic', ['servers', 'characters'])
-        self.assertFalse(select_shortcut(w, 1))
+    def test_saved_checkbox_does_not_block_the_button(self):
+        w = FakeWorker(self.config(False), 'Atlantic', ['servers', 'servers', 'characters'])
+        self.assertTrue(select_shortcut(w, 1))
+        self.assertEqual(w.clicked, [([200, 460], 'servers')])
         self.assertEqual(w.pressed, [])
     def test_unverified_shard_cannot_use_fast_path(self):
         w = FakeWorker(self.config(), None, ['servers', 'characters'])
         self.assertFalse(select_shortcut(w, 1))
         self.assertEqual(w.pressed, [])
+        self.assertEqual(w.clicked, [])
     def test_wrong_shard_cannot_use_fast_path(self):
         w = FakeWorker(self.config(), 'Legends', ['servers', 'characters'])
         self.assertFalse(select_shortcut(w, 1))
         self.assertEqual(w.pressed, [])
+        self.assertEqual(w.clicked, [])
     def test_menu_is_verified_before_enter(self):
         w = FakeWorker(self.config(), 'Atlantic', ['characters'])
         with self.assertRaisesRegex(RuntimeError, 'not on shard list'):
             select_shortcut(w, 1)
         self.assertEqual(w.pressed, [])
-    def test_enter_only_once_on_server_menu(self):
+        self.assertEqual(w.clicked, [])
+    def test_button_is_clicked_once_on_the_server_menu(self):
         w = FakeWorker(self.config(), 'Atlantic', ['servers', 'servers', 'characters'])
         self.assertTrue(select_shortcut(w, 1))
-        self.assertEqual(w.pressed, ['enter'])
+        self.assertEqual(w.clicked, [([200, 460], 'servers')])
+        self.assertEqual(w.pressed, [])
         self.assertEqual(w.selected_index, 1)
-    def test_login_screen_after_enter_fails_closed(self):
+    def test_login_screen_after_the_button_fails_closed(self):
         w = FakeWorker(self.config(), 'Atlantic', ['servers', 'login'])
         with self.assertRaisesRegex(RuntimeError, 'returned to login'):
             select_shortcut(w, 1)
-        self.assertEqual(w.pressed, ['enter'])
+        self.assertEqual(w.clicked, [([200, 460], 'servers')])
+        self.assertEqual(w.pressed, [])
 
 if __name__ == '__main__':
     unittest.main()
@@ -87,7 +97,7 @@ def test_confirmed_creation_enables_fast_return(monkeypatch):
     w.seed_new_available = lambda: True
     w.seed_wait_marker = lambda *args: None
     w.apply_appearance = lambda: None
-    w.click = lambda *args: None
+    w.click = lambda *args, **kwargs: None
     w.seed_visible = lambda marker: True
     w.bridge_status = lambda *args, **kwargs: status
     w.bridge = SimpleNamespace(request_route_inn=lambda *args, **kwargs: [4403, 1164, 0])
@@ -95,8 +105,10 @@ def test_confirmed_creation_enables_fast_return(monkeypatch):
     monkeypatch.setattr(seeder_engine.pg, 'write', Mock())
     assert seeder_engine.SeederOperations.seed_one(w, 0, 'Legends')
     assert w.last_verified_shard == 'Legends'
+    w.click = lambda point, expected=None: w.clicked.append((point, expected))
     assert select_shortcut(w, 0)
-    assert w.pressed == ['enter']
+    assert w.clicked == [([200, 460], 'servers')]
+    assert w.pressed == []
 
 
 def test_wrong_creation_fingerprint_does_not_enable_fast_return(monkeypatch):
@@ -115,7 +127,7 @@ def test_wrong_creation_fingerprint_does_not_enable_fast_return(monkeypatch):
     w.seed_new_available = lambda: True
     w.seed_wait_marker = lambda *args: None
     w.apply_appearance = lambda: None
-    w.click = lambda *args: None
+    w.click = lambda *args, **kwargs: None
     w.seed_visible = lambda marker: True
     w.bridge_status = lambda *args, **kwargs: {'name_sha256': 'wrong', 'instance_id': 'new-world'}
     monkeypatch.setattr(seeder_engine.pg, 'write', Mock())
@@ -123,4 +135,5 @@ def test_wrong_creation_fingerprint_does_not_enable_fast_return(monkeypatch):
         seeder_engine.SeederOperations.seed_one(w, 0, 'Legends')
     assert w.last_verified_shard is None
     assert not select_shortcut(w, 0)
+    assert w.clicked == []
     assert w.pressed == []

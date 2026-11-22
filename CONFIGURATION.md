@@ -1,6 +1,6 @@
 # Krampuslauf — first-time configuration
 
-For **1.8.0-beta.4**, using the official Ultima Online Classic Client and Razor Enhanced.
+For **1.8.0-beta.5**, using the official Ultima Online Classic Client and Razor Enhanced.
 
 Follow the steps in order. The bright **NEXT** messages in the application point to the next tab. The usual path is **Setup → Game client → Shards → Automation**.
 
@@ -39,8 +39,8 @@ Open **Setup > Checklist** in Krampuslauf, then complete these Razor and game se
 2. In **Scripting**, add the supplied `krampuslauf_bridge.py` from its permanent location. Enable its **AutoStart at Login** option. This script runs inside Razor; do not double-click it to run it with desktop Python.
 3. In **Options**, enable **Automatically Open Doors**.
 4. In **Technical**, enable **Remember passwords**. Enter credentials only in the normal game/Razor login flow. Krampuslauf does not ask for your game password.
-5. **Match Razor's administrator elevation.** The checklist shows whether Krampuslauf is already running as administrator. If it is not, click **Restart as administrator** and launch the game through Razor. Windows may ask you to approve the restart. This is not one of the checkboxes. If the CUO Handshake Fix Patcher has set Razor to start without administrator rights, leave Krampuslauf unelevated as well. See the README section **Running Razor without an administrator prompt**.
-6. **In Game Options (Paperdoll), set Tooltip delay to 5000 ms.**
+5. Launch the game through Razor.
+6. **In Game Options (Paperdoll), turn off tooltips or set Tooltip delay to 5000 ms.**
 7. **Check all five boxes**, then click **Save checklist**. Configuring the settings alone does not check these confirmation boxes for you. **Show bridge script** opens Explorer with `krampuslauf_bridge.py` selected. Add that file in Razor; do not run it with desktop Python.
 
 **NEXT: CLOSE RAZOR AND CLASSIC CLIENT → SETUP > PROFILES.**
@@ -54,7 +54,7 @@ Razor can switch profiles when it recognizes a character. Temporary isolation ke
 3. Paste the Razor data folder that contains **both** `Profiles` and `Backup`, then click **Find / validate folder**. Copy that path from File Explorer. Profiles has no Browse button, because a folder window opened from Krampuslauf can appear behind this window. If several installations are found, paste the one your Razor actually uses.
 4. Click **Prepare Krampuslauf** and read the confirmation.
 5. Wait for the status to report that character links are isolated.
-6. Start Razor as administrator with the **default** profile selected, then launch the game through Razor.
+6. Start Razor with the **default** profile selected, then launch the game through Razor.
 
 Only the two `RazorEnhanced.NewProfiles` files are changed. Original copies are retained for restoration; profile names, named profile folders and saved Razor passwords are not intentionally changed. Use real local folders; linked folders and network locations are not supported for profile recovery.
 
@@ -69,7 +69,7 @@ No calibration is needed. The Classic Client draws its login, shard, character a
 1. Open **Game client**.
 2. Click **Refresh windows**, then select the official Classic Client. Select it again whenever Krampuslauf is relaunched.
 3. Put the game on its login screen, shard list or a character list and click **Check current screen**. It reports the game-area size, the detected scaling and the recognized menu. It sends no mouse or keyboard input.
-4. If a menu is reported as **unknown**, make sure nothing overlaps the game window and the pointer is not hovering over a button, then check again. In the game's options, setting the tooltip delay to its maximum (5000 ms) also keeps tooltips from appearing over the menus; as a backstop, Krampuslauf moves the pointer off a control it has rested on for 4 seconds.
+4. If a menu is reported as **unknown**, make sure nothing overlaps the game window and the pointer is not hovering over a button, then check again. In Game Options (Paperdoll), set Tooltip delay to 5000 ms, or turn tooltips off, so a tooltip cannot cover a menu marker.
 5. If a click ever misses its target, open **Setup > Game Client > Click points**, choose the point, show the matching game screen, click **Record selected** and hover over the control within 4 seconds. **Reset to built-in** undoes a recorded point.
 
 Use one Classic Client window during setup and testing. Recognized warning dialogs (account still online, Origin communication error) are dismissed with Enter; unknown dialogs stop the run.
@@ -119,7 +119,7 @@ Skip this section if you only want to cycle existing characters. Creation-screen
 1. Open **Automation > Character Seeder** and choose **Main Account** or **Account 2–15**, arranged in five rows of three. Account Nickname is optional, capped at 16 characters, and updates the radio-button caption; it never changes the stored history identity. Existing nicknames, settings and progress are preserved when upgrading.
 2. Open **Automation > Appearance**. Choose **Shard + Slot** or **Fantasy (default)**. For Shard + Slot, use a prefix of 1–10 letters. For fantasy names, choose Single, First + Last, or Mixed. Use **Preview names** to review examples.
 3. Optional: open **Automation > Appearance** to choose sex, race and hair, facial hair or horn styles, and skin colours on the same page (see below). Leave **Customize appearance** off to keep the game's default male human.
-4. Name typing needs no test. Launch the game through Razor and run Krampuslauf as administrator to match Razor's elevation.
+4. Name typing needs no test. Launch the game through Razor.
 5. Set **Account slots per normal shard** to this account's actual capacity: **5, 6 or 7**. To leave room for a transfer, enable **Keep one slot empty on every shard**. On a seven-slot account this limits creation to **six total characters**, including characters already there. No per-shard skip entries are needed. The option starts off for existing and new installations.
 6. Settings and history save to the selected account automatically. The last-used account is restored at launch; start confirmations state the selected nickname.
 7. Use **Start Character Seeder** for a creation run. Alternatively, enable the creation option in **Automation > Gift Cycler** for combined operation. The loaded history is required in either case. Both modes honor the same reservation.

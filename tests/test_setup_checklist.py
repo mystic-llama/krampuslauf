@@ -43,7 +43,6 @@ class SetupChecklistTest(unittest.TestCase):
         self.assertNotIn('shutil.rmtree', helper)
         self.assertIn('RazorEnhanced.NewProfiles', helper)
         self.assertNotIn('RazorEnhanced.password', source)
-        self.assertIn('ShellExecuteW', (ROOT/'setup_checklist.py').read_text())
 
     def test_legacy_data_folder_moves_without_touching_other_directories(self):
         import app_paths
