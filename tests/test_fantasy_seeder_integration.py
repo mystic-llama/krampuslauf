@@ -117,6 +117,18 @@ class FantasySeederTests(unittest.TestCase):
         self.assertTrue(worker.fantasy_name_generator.matches(name, style='full', category='human_female'))
         self.assertIn('shitha rowan', worker.fantasy_name_generator.used_names)
 
+    def test_unconfirmed_convention_name_gets_a_different_name_for_the_same_slot(self):
+        worker = self.new_worker(mode='convention')
+        name = worker.seed_name_for_slot('Catskills', 0, 0)
+        worker.seed_update('Catskills', unconfirmed_creations=[name],
+                           name_assignments={'2': 'Llama CAT b'})
+        worker.cfg['seed_fantasy_style'] = 'single'
+        worker.fantasy_name_generator = None
+        replacement = worker.seed_name_for_slot('Catskills', 0, 0, assign=True)
+        self.assertNotEqual(replacement, name)
+        self.assertEqual(worker.seed_name_for_slot('Catskills', 0, 0, assign=True), replacement)
+        self.assertEqual(worker.seed_name_for_slot('Catskills', 0, 1), 'Llama CAT b')
+
     def test_legacy_convention_name_is_kept_when_combined_run_changes_to_fantasy(self):
         w = self.new_worker(mode='convention')
         created = 'Former CAT b'

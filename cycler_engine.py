@@ -553,10 +553,7 @@ class GameWorker:
                 continue
             if not isinstance(record, dict):
                 continue
-            names = [n for n in record.get('created', []) if isinstance(n, str)]
-            if isinstance(record.get('pending'), str) and record['pending']:
-                names.append(record['pending'])
-            if names:
+            if record.get('created') or record.get('pending') or record.get('unconfirmed_creations'):
                 self._mark_roster_changed(shard_name)
                 self.seeded_character_hashes[shard_name] = {
                     name_hash(n) for n in excluded_creation_names(record, cycle)}
@@ -1405,6 +1402,12 @@ class GameWorker:
                     # as SEEDER, not return to character slot clicks. Newly
                     # created characters may reorder the entire roster.
                     if self.cfg.get('create_missing', False) and hasattr(self, 'combined_shard_status'):
+                        if hasattr(self, 'archive_pending_creation'):
+                            _, seed_record = self.seed_record(shard)
+                            if seed_record.get('pending'):
+                                self.reach_characters(index)
+                                self.archive_pending_creation(shard)
+                                self.refresh_seeded_roster(shard)
                         combined = self.combined_shard_status(shard)
                         if combined.get('status') == 'in_progress':
                             self.say('Unfinished Seeder handoff on {} found in saved progress. Resuming Seeder only.'.format(shard))

@@ -1,6 +1,6 @@
 # Krampuslauf — first-time configuration
 
-For **1.8.0-beta.6**, using the official Ultima Online Classic Client and Razor Enhanced.
+For **1.8.0-beta.7**, using the official Ultima Online Classic Client and Razor Enhanced.
 
 Follow the steps in order. The bright **NEXT** messages in the application point to the next tab. The usual path is **Setup → Game client → Shards → Automation**.
 
@@ -144,7 +144,7 @@ Seeder creates only when the New option is verified. Existing characters are not
 
 **Transfer-slot behavior:** reservation limits are 4/5/6 total characters for 5/6/7-slot accounts. The app does not detect the account's maximum capacity automatically; choose the correct value. Existing character rows and the New button must be recognized correctly. Test one partly populated shard first. In standalone reservation mode, existing characters may be logged in and out to check occupancy; this does not update gift-completion records, although the game may still award a login gift. Gift Cycler continues to include an occupied seventh slot unless you explicitly skip it. Already-full shards stay full: Krampuslauf never deletes a character to create space. Unsupported shards are excluded from both creation and gift runs, regardless of reservation settings.
 
-After a route failure, return the game to the login or shard menu and restart the Seeder. Previously confirmed characters are retained, their interrupted routes are not replayed, and finished-shard checkpoints remain. No reset button is needed. If a creation was submitted but never confirmed, inspect the character list and saved activity log before retrying.
+After a route failure or rejected name, dismiss any game message and return to the login or shard menu before restarting. The Seeder records the unconfirmed attempt when it reaches the verified shard, then checks live capacity and uses a fresh name when it creates the next character.
 
 ## 9. Pause, resume and stop
 
@@ -154,7 +154,7 @@ After a route failure, return the game to the login or shard menu and restart th
 - The pointer is not locked. Avoid using the computer for other tasks during automation. PyAutoGUI's corner fail-safe can still stop the job.
 - A Razor command already underway may finish before a pause takes effect. If Escape is unavailable because another application reserved it, use the Activity window buttons.
 
-After a route failure, return the game to the login or shard menu and restart the Seeder. Previously confirmed characters are retained, their interrupted routes are not replayed, and finished-shard checkpoints remain. No reset button is needed. If a creation was submitted but never confirmed, inspect the character list and saved activity log before retrying.
+After restarting from the login or shard menu, the Seeder checks the live character slots again if the last creation was unconfirmed. This preserves the configured transfer slot even if the previous attempt created a character.
 
 ## 10. Restore normal profiles when finished
 

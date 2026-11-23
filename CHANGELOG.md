@@ -1,3 +1,9 @@
+# 1.8.0-beta.7
+
+- Resume Character Seeder from the live shard menu after an unconfirmed character creation. Keep a record of the earlier attempt and use a fresh name if a slot is open.
+- Recheck live character slots before continuing so an earlier attempt that created a character counts toward the transfer-slot limit.
+- Update the recovery message and add tests for resuming with an open slot and at the transfer-slot limit.
+
 # 1.8.0-beta.6
 
 - Add per-account shard groups for Gift Cycler and Character Seeder. Run all eligible shards, English shards, or Asian shards alongside individual shard exclusions.

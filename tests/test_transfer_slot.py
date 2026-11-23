@@ -9,17 +9,18 @@ import pytest
 import test_combined_shard_seeding as combined
 import test_roster_identity_recovery as roster
 from recovery_rules import PVP_SHARDS, creation_limit, occupied_slots_for
+from seed_recovery import archive_pending_after_menu
 from seeder_rules import generated_name, name_hash
 
 ROOT = Path(__file__).resolve().parents[1]
 tree = ast.parse((ROOT / 'seeder_engine.py').read_text(encoding='utf8'))
 source = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'SeederOperations')
 names = {'seed_record', 'seed_update', 'combined_shard_status',
-         'complete_combined_shard', 'run_seeder', 'seed_one'}
+         'complete_combined_shard', 'run_seeder', 'seed_one', 'archive_pending_creation'}
 body = [n for n in source.body if isinstance(n, ast.FunctionDef) and n.name in names]
 namespace = dict(PVP_SHARDS=PVP_SHARDS, generated_name=generated_name,
                  SeedNotReady=RuntimeError, load_json=roster.load_json,
-                 atomic_json=roster.atomic_json)
+                 atomic_json=roster.atomic_json, archive_pending_after_menu=archive_pending_after_menu)
 exec(compile(ast.fix_missing_locations(ast.Module(body=[ast.ClassDef(
     name='Seeder', bases=[], keywords=[], body=body, decorator_list=[])],
     type_ignores=[])), '<production-reservation-methods>', 'exec'), namespace)
@@ -150,6 +151,24 @@ def test_standalone_checks_total_without_recording_gifts(worker, existing, creat
     assert 'combined_shard' not in record
     assert worker.combined_shard_status('Catskills') == {}
     assert set(record.get('creation_cycles', {}).values()) <= {'cycle-test'}
+
+
+@pytest.mark.parametrize('existing, expected', [(5, [6]), (6, [])])
+def test_pending_restart_uses_live_roster_to_keep_transfer_slot(worker, existing, expected):
+    occupied_rows(worker, existing)
+    worker.seed_update(
+        'Catskills', pending='Shitha Rowan', name_assignments={'6': 'Shitha Rowan'},
+        reserved_seeder_shard={'status': 'in_progress', 'cycle_id': 'cycle-test',
+                               'next_slot': 6, 'cap': 6})
+
+    worker.run_seeder()
+
+    assert worker.attempted_rows[:existing] == list(range(1, existing + 1))
+    assert worker.created_rows == expected
+    _, record = worker.seed_record('Catskills')
+    assert record['pending'] is None
+    assert record['unconfirmed_creations'] == ['Shitha Rowan']
+    assert record['reserved_seeder_shard']['status'] == 'complete'
 
 
 def test_standalone_restores_settings_after_failure(worker):

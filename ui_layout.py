@@ -8,7 +8,7 @@ from account_profiles import SLOTS, NICKNAME_LIMIT
 from appearance import COLOR_ASSETS
 from shard_policy import SHARD_GROUP_OPTIONS
 
-VERSION = '1.8.0-beta.6'
+VERSION = '1.8.0-beta.7'
 PROJECT_URL = 'https://github.com/mystic-llama/krampuslauf'
 PAGE_WIDTH, PAGE_HEIGHT = 676, 602
 HEADER_HEIGHT = 144

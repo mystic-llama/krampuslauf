@@ -1,6 +1,6 @@
 # Beta development handoff
 
-Version: **1.8.0-beta.6**. Original application: Python 3.12, pythonnet and native Windows Forms. The baseline is the supplied 1.7.6 full-source package; this release carries forward the 1.8.0-preview.1 layout redesign.
+**1.8.0-beta.7** uses Python 3.12 or newer, pythonnet and native Windows Forms. The 1.8.0 series carries forward the layout redesign from 1.8.0-preview.1.
 
 ## Current structure
 

@@ -32,7 +32,7 @@ def test_creation_capacity_error_names_the_setting_and_destination():
     ('Record click point app_skin_elf_first under Game client > Click points', 'client', 'Record selected'),
     ('Fixed appearance mode allows one race only.', 'looks', 'Save appearance'),
     ('No unfinished or pending creations in this Seeder history', 'seeder', 'Select the account'),
-    ('Creation outcome unknown; PENDING', 'seeder', 'restart'),
+    ('Creation outcome unknown; PENDING', 'seeder', 'Restart the Seeder'),
     ('No krampuslauf_bridge.py heartbeat', 'diagnostics', 'AutoStart at Login'),
     ('No included shards in the selected shard group.', 'gift', 'Check at least one shard'),
     ('Logout NOT verified', 'status', 'log out manually'),

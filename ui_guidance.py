@@ -65,10 +65,9 @@ def explain_error(error):
     if any(term in text for term in ('pending', 'unresolved creation', 'creation outcome unknown',
                                      'unfinished routing', 'inn-route/logout recovery', 'creation submitted')):
         return advise('Check the unfinished character',
-                      'Open the character list in the game and check whether the character exists.\n\n'
-                      'Return to the login or shard menu before restarting the Seeder. '
-                      'Confirmed characters are kept and interrupted routes are not replayed. '
-                      'If creation was never confirmed, review the saved activity log before retrying.', 'seeder')
+                      'Dismiss any message in Classic Client and return to the login or shard menu. '
+                      'Restart the Seeder. It will check the shard’s live character or creation menu '
+                      'and continue with a new name if there is room for another character.', 'seeder')
     if 'backup' in text and any(t in text for t in ('missing', 'checksum', 'verification failed', 'unreadable')):
         return advise('Profile backup needs attention',
                       'Keep Razor Enhanced and Classic Client closed. Do not prepare profiles again.\n\n'

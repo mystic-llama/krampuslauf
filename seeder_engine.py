@@ -1,8 +1,8 @@
 """Character creation integrated into the verified Classic Client + RE bridge.
 
 Explicit opt-in only. Calibration and name-input testing MUST precede irreversible
-Create/Enter World. Pending creations are durable; ambiguous submissions are
-never repeated automatically. No deletion or replacement of characters.
+Create/Enter World. Unconfirmed attempts are recorded and the Seeder rediscovers
+the live roster before continuing a run.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from fantasy_name_generator import (FantasyNameGenerator, STYLES,
                                     is_valid_name as is_valid_fantasy_name)
 from seed_recovery import (current_seed_candidates, pending_seed_candidates,
                            candidate_for_status, finish_seed_record,
-                           promote_pending_after_world_proof)
+                           promote_pending_after_world_proof, archive_pending_after_menu)
 
 
 class SeedNotReady(RuntimeError):
@@ -115,6 +115,15 @@ class SeederOperations:
             self.snapshot_seed_progress('interrupted-routes')
             atomic_json(SEED_PROGRESS_FILE, state)
 
+    def archive_pending_creation(self, shard):
+        """Call only after reaching the verified shard's character or creation menu."""
+        state, record = self.seed_record(shard)
+        name = archive_pending_after_menu(record)
+        if name:
+            atomic_json(SEED_PROGRESS_FILE, state)
+            self.say('SEEDER RESUME: saved the unconfirmed attempt {} on {}. Continuing from the live menu.'.format(
+                name, shard))
+
     def _fantasy_generator(self):
         """Single persistent history across all local Seeder profiles.
 
@@ -135,6 +144,8 @@ class SeederOperations:
                 for record in profile.values():
                     if isinstance(record, dict):
                         assigned.extend((record.get('name_assignments') or {}).values())
+                        assigned.extend(record.get('unconfirmed_creations', []))
+            assigned = [name for name in assigned if is_valid_fantasy_name(name)]
             if assigned:
                 generator.reserve(assigned)
             self.fantasy_name_generator = generator
@@ -161,8 +172,11 @@ class SeederOperations:
                 if saved.endswith(suffix) and re.fullmatch(r'[A-Za-z]{1,10}', saved[:-len(suffix)]):
                     return saved
         if mode == 'convention':
-            return generated_name(self.cfg.get('seed_name_prefix', 'Llama'),
-                                  self.seed_nickname, index, ordinal, shard=shard)
+            suggested = generated_name(self.cfg.get('seed_name_prefix', 'Llama'),
+                                       self.seed_nickname, index, ordinal, shard=shard)
+            if not any(name.casefold() == suggested.casefold()
+                       for name in record.get('unconfirmed_creations', [])):
+                return suggested
         style = self.cfg.get('seed_fantasy_style', 'mixed')
         if style not in STYLES:
             raise SeedNotReady('Unsupported fantasy-name style: {}'.format(style))
@@ -315,10 +329,7 @@ class SeederOperations:
         if not is_supported(shard):
             return False
         self.check_seed_setup()
-        state,record=self.seed_record(shard)
-        if record.get('pending'):
-            raise RuntimeError('UNRESOLVED CREATION: {} / {} is pending; inspect character list manually before retrying.'.format(
-                shard,record['pending']))
+        _, record = self.seed_record(shard)
         unfinished=set(record.get('created',[]))-set(record.get('completed',[]))-set(record.get('abandoned_routes',[]))
         if unfinished:
             raise RuntimeError('Existing world-confirmed character(s) have unfinished routing/logout: {}. '
@@ -343,6 +354,8 @@ class SeederOperations:
                 return False
             self.click(self.cfg['points']['seed_new_button'])
             self.seed_wait_marker('seed_appearance',self.cfg.get('seed_stage_timeout',35))
+        if record.get('pending'):
+            self.archive_pending_creation(shard)
         choice = self.apply_appearance()
         name = self.seed_name_for_slot(shard, index, ordinal, assign=True, choice=choice)
         if name in record.get('created', []):
@@ -529,8 +542,6 @@ class SeederOperations:
                     if hasattr(self, 'seed_name_for_slot') else
                     generated_name(self.cfg.get('seed_name_prefix', 'Llama'),
                                    self.seed_nickname, index, slot - 1, shard=shard))
-            if record.get('pending'):
-                raise RuntimeError('Combined seeding interrupted on {}: {} is PENDING. Check the character list and saved activity log; no new character will be submitted.'.format(shard, record['pending']))
             if name and name in record.get('created', []):
                 if name not in record.get('completed', []) and name not in record.get('abandoned_routes', []):
                     raise RuntimeError('Combined seeding interrupted on {}: {} has an interrupted route. Return to the login or shard menu and restart the Seeder.'.format(shard, name))
@@ -696,6 +707,9 @@ class SeederOperations:
                     for _ in range(limit):
                         self.check()
                         reached=self.reach_characters(index)
+                        if record.get('pending'):
+                            self.archive_pending_creation(shard)
+                            _, record = self.seed_record(shard)
                         if reached=='creation':
                             self.say('Seeder: zero-character shard {} opened directly to creation.'.format(shard))
                             self.seed_one(index,shard,already_on_creation=True)

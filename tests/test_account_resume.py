@@ -102,6 +102,32 @@ def test_halt_retains_current_shard_checkpoint_and_completed_shards(monkeypatch)
 
 
 
+def test_standalone_retry_checks_the_live_menu_before_releasing_pending(monkeypatch, tmp_path):
+    shard = 'Drachenfels'
+    record = {'pending': 'Shitha Rowan', 'name_assignments': {'1': 'Shitha Rowan'}}
+    records = {shard: record}
+    w = worker(monkeypatch, records)
+    w.cfg['shards'] = [shard]
+    state = {'profiles': {'account': records}}
+    w.seed_record = lambda name: (state, records[name])
+    w.reach_characters.side_effect = [None, None]
+    w.seed_new_available = Mock(side_effect=[True, False])
+    w.archive_pending_creation = lambda name: seeder_engine.SeederOperations.archive_pending_creation(w, name)
+    monkeypatch.setattr(seeder_engine, 'SEED_PROGRESS_FILE', tmp_path / 'seeder_progress.json')
+
+    def create(index, name):
+        assert w.reach_characters.call_count == 1
+        assert records[name]['pending'] is None
+        assert records[name]['name_assignments'] == {}
+
+    w.seed_one.side_effect = create
+    seeder_engine.SeederOperations.run_seeder(w)
+
+    w.seed_one.assert_called_once_with(0, shard)
+    assert record['unconfirmed_creations'] == ['Shitha Rowan']
+    assert shard_seed_complete(record, 7)
+
+
 def test_overnight_migration_keeps_both_accounts_and_only_restores_proven_shards():
     from account_profiles import migrate_overnight_history
     from seeder_rules import account_token

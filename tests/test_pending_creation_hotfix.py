@@ -85,6 +85,25 @@ def test_manual_absence_releases_saved_name_assignment():
     assert record['name_assignments'] == {'3': 'Other Name'}
 
 
+def test_menu_recovery_preserves_uncertainty_and_other_characters():
+    from cycle_state import excluded_creation_names
+    from seed_recovery import archive_pending_after_menu
+
+    record = sample()['profiles'][ACCOUNT][SHARD]
+    record['name_assignments'] = {'2': NAME, '3': 'Other Name'}
+    record['combined_shard'] = {'status': 'in_progress', 'next_slot': 2}
+    record['creation_cycles'] = {NAME: 'gift-cycle'}
+    assert archive_pending_after_menu(record) == NAME
+    assert archive_pending_after_menu(record) is None
+    assert record['pending'] is None
+    assert record['unconfirmed_creations'] == [NAME]
+    assert record['name_assignments'] == {'3': 'Other Name'}
+    assert 'combined_shard' not in record
+    assert NAME not in record['created']
+    assert NAME in excluded_creation_names(record, 'gift-cycle')
+    assert NAME not in excluded_creation_names(record, 'next-cycle')
+
+
 def test_end_attempt_archives_pending_routes_and_assignments_without_touching_others():
     from copy import deepcopy
     from seed_recovery import end_seed_attempt

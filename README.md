@@ -6,7 +6,7 @@
 
 Krampuslauf is a Windows app for seasonal gift runs in the official Ultima Online Classic Client with Razor Enhanced. **Character Seeder** creates characters in open slots across your selected shards. **Gift Cycler** logs existing characters in and out so eligible characters can receive their holiday gifts. Built by Mystic Llama.
 
-**Public beta · 1.8.0-beta.6**
+**Public beta · 1.8.0-beta.7**
 
 [Configuration guide](CONFIGURATION.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/mystic-llama/krampuslauf/issues)
 
@@ -51,7 +51,7 @@ Ultima Online’s Krampus boss is a separate seasonal encounter. Krampuslauf han
 
 ## Download for Windows
 
-The [beta release](https://github.com/mystic-llama/krampuslauf/releases/tag/v1.8.0-beta.6) includes the Windows x64 installer, portable ZIP, and full source ZIP. Run the installer or extract the entire portable ZIP and open `Krampuslauf.exe`. Both Windows packages include the Python runtime. Follow the [configuration guide](CONFIGURATION.md) to set up Razor Enhanced and the Classic Client.
+The [beta release](https://github.com/mystic-llama/krampuslauf/releases/tag/v1.8.0-beta.7) includes the Windows x64 installer, portable ZIP, and full source ZIP. Run the installer or extract the entire portable ZIP and open `Krampuslauf.exe`. Both Windows packages include the Python runtime. Follow the [configuration guide](CONFIGURATION.md) to set up Razor Enhanced and the Classic Client.
 
 ## Run the source
 
@@ -86,7 +86,7 @@ A mouse-targeting failure pauses before clicking and keeps the current operation
 
 Full window does not stop automation. After a halt, read the instructions and explicitly return to the main window. A stopped character can remain logged in; check the game before resuming.
 
-After a route failure, return the game to the login or shard menu and restart the Seeder. Previously confirmed characters are retained, their interrupted routes are not replayed, and finished-shard checkpoints remain. No reset button is needed. If a creation was submitted but never confirmed, inspect the character list and saved activity log before retrying.
+After a route failure or a rejected name, dismiss any game message, return to the login or shard menu, and restart the Seeder. It records the unconfirmed attempt, checks the live character list or creation screen on that shard, and uses a fresh name if there is room to create. Confirmed characters and finished checkpoints on other shards are kept.
 
 When finished, close Razor and Classic Client and use **Setup > Profiles > Restore original profiles**.
 
@@ -98,7 +98,7 @@ Extract this full source package into a new folder. An existing EXE is not updat
 
 `krampuslauf_bridge.py` is unchanged from the supplied 1.7.6 baseline. Existing users running that exact bridge need no bridge update for this beta. New users must install the included script in Razor.
 
-When first using older creation history, the app backs up the original ledger and conservatively tags previously untagged names to the current cycle. Those names remain excluded for that cycle; a later new cycle can visit them. Pending characters stay protected in every cycle. Old handoffs without a cycle ID are not used to skip a shard. **New cycle / account** does not reset creation or fantasy-name ledgers.
+When first using older creation history, the app backs up the original ledger and conservatively tags previously untagged names to the current cycle. Pending submissions stay excluded until the Seeder checks the live menu. After that, any character matching the unconfirmed attempt stays excluded from the gift cycle in which it was attempted. **New cycle / account** preserves creation and fantasy-name ledgers.
 
 Krampuslauf does not ask for your game password. Credentials remain in Razor. Saved window titles are cleared from settings; The activity log can contain character and shard names. Review entries before sharing them.
 

@@ -1,21 +1,17 @@
-# Krampuslauf 1.8.0-beta.6
+# Krampuslauf 1.8.0-beta.7
 
 A Windows beta for seasonal gift runs in the official Ultima Online Classic Client with Razor Enhanced. Character Seeder fills available character slots on selected shards and Gift Cycler logs existing characters in and out for eligible holiday rewards.
 
-## What's new since 1.8.0-beta.5
+## What's new since 1.8.0-beta.6
 
-- **Shard groups.** Choose All, English, or Asian shards on either automation page. Each account saves its selection, and the individual shard checkboxes still apply.
-- **Randomize All.** Choose this option on the Appearance page to use all available appearance choices for new characters.
-- **Race-based naming.** Character Seeder applies appearance before reserving a fantasy name for the selected race and sex. The gargoyle libraries now have 5,496 male and 3,381 female single-word names.
-- **Resume with new preferences.** Change appearance or naming options between runs. The Seeder checks unsubmitted name reservations against the new selection and preserves submitted names for recovery.
-- **Fantasy name screening.** Skip common blocked fragments within words and across the space in a full name. The Seeder rechecks saved names that have yet to be submitted.
-- **Shard scanning.** The scan brings the chosen Classic Client window to the foreground before checking whether the shard list is open.
+- **Resume after an unconfirmed creation.** Dismiss any open game message and restart from Login or Shard Select. Character Seeder checks the live shard menu and records the old attempt. If there is room, it continues with a fresh name.
+- **Transfer-slot limits use the live roster.** If the earlier attempt created a character, that character counts toward the limit when the Seeder checks the shard again.
 
 ## Install
 
-Run `Krampuslauf_1.8.0-beta.6_Windows_x64_Setup.exe` to install. For a portable copy, extract `Krampuslauf_1.8.0-beta.6_Windows_x64.zip` and open `Krampuslauf.exe` inside the extracted folder. Both Windows packages include the Python runtime.
+Run `Krampuslauf_1.8.0-beta.7_Windows_x64_Setup.exe` to install. For a portable copy, extract `Krampuslauf_1.8.0-beta.7_Windows_x64.zip` and open `Krampuslauf.exe` inside the extracted folder. Both Windows packages include the Python runtime.
 
-Use `Krampuslauf_1.8.0-beta.6_Full_Source.zip` for development or to build from source. See [Run the source](../README.md#run-the-source) for prerequisites and setup.
+Use `Krampuslauf_1.8.0-beta.7_Full_Source.zip` for development or to build from source. See [Run the source](../README.md#run-the-source) for prerequisites and setup.
 
 Follow the [configuration guide](../CONFIGURATION.md) to set up Razor Enhanced and the Classic Client.
 

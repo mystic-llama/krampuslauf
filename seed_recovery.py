@@ -89,12 +89,33 @@ def confirm_pending_not_created(state, account_id, shard, name):
         raise ValueError('Pending entry changed; refusing to clear.')
     if name in record.get('created', []) or name in record.get('completed', []):
         raise ValueError('Character already recorded as created/completed; refusing to clear.')
-    record['pending'] = None
-    assignments = record.get('name_assignments', {})
-    record['name_assignments'] = {slot: value for slot, value in assignments.items() if value != name}
+    _release_pending_name(record, name)
     record.setdefault('manual_resolutions', []).append({
         'name': name, 'decision': 'not_created', 'source': 'operator_confirmed'})
     return state
+
+
+def archive_pending_after_menu(record):
+    """Keep the attempt without assuming an unverified final submit failed."""
+    name = record.get('pending')
+    if not name:
+        return None
+    if name not in record.get('created', []) and name not in record.get('completed', []):
+        attempts = record.setdefault('unconfirmed_creations', [])
+        if name not in attempts:
+            attempts.append(name)
+    _release_pending_name(record, name)
+    # The attempted submit may have changed the live roster and its next slot.
+    record.pop('combined_shard', None)
+    record.pop('reserved_seeder_shard', None)
+    return name
+
+
+def _release_pending_name(record, name):
+    record['pending'] = None
+    assignments = record.get('name_assignments') or {}
+    if name not in record.get('created', []) and name not in record.get('completed', []):
+        record['name_assignments'] = {slot: value for slot, value in assignments.items() if value != name}
 
 
 def promote_pending_after_world_proof(state, account_id, shard, name, status):

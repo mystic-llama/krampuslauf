@@ -19,7 +19,8 @@ def adopt_legacy_creations(state, account_id, cycle):
     for record in profile.values():
         if not isinstance(record, dict):
             continue
-        names = [name for name in record.get('created', []) if isinstance(name, str)]
+        names = list(record.get('created', [])) + list(record.get('unconfirmed_creations', []))
+        names = [name for name in names if isinstance(name, str)]
         if isinstance(record.get('pending'), str) and record['pending']:
             names.append(record['pending'])
         if not names:
@@ -43,7 +44,8 @@ def checkpoint_for_cycle(record, cycle):
 def excluded_creation_names(record, cycle):
     """Exclude current-cycle/unknown-age creations and every unresolved pending name."""
     tags = record.get('creation_cycles') or {}
-    names = [name for name in record.get('created', []) if isinstance(name, str)
+    attempted = list(record.get('created', [])) + list(record.get('unconfirmed_creations', []))
+    names = [name for name in attempted if isinstance(name, str)
              and (name not in tags or not cycle or tags.get(name) == cycle)]
     pending = record.get('pending')
     if isinstance(pending, str) and pending:
